@@ -1112,12 +1112,10 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
             </div>
           )}
           
-          {/* Typing dots animation in chat bubble when AI is processing */}
+          {/* Clean typing dots animation when AI is processing */}
           {isLoading && (currentStep === 'understanding' || currentStep === 'generating' || currentStep === 'input') && (
-            <div className="flex w-full animate-fade-in justify-start">
-              <div className="max-w-[80%] rounded-2xl px-4 py-3 mb-4 bg-ai-message text-ai-message-foreground mr-12">
-                <TypingDots />
-              </div>
+            <div className="flex w-full animate-fade-in justify-start mb-4">
+              <TypingDots className="text-ai-message-foreground" />
             </div>
           )}
           

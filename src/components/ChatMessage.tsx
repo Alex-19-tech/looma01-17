@@ -65,21 +65,21 @@ export function ChatMessage({
 
   return (
     <div className={cn(
-      "flex w-full animate-fade-in",
+      "flex w-full animate-fade-in mb-4",
       isUser ? "justify-end" : "justify-start"
     )}>
       <div className={cn(
-        "max-w-[80%] rounded-2xl px-4 py-3 mb-4",
+        "text-sm leading-relaxed",
         isUser 
-          ? "bg-user-message text-user-message-foreground ml-12" 
-          : "bg-ai-message text-ai-message-foreground mr-12"
+          ? "text-user-message-foreground ml-12" 
+          : "text-ai-message-foreground mr-12"
       )}>
         {promptType && promptType !== "Auto" && (
           <div className="text-xs opacity-70 mb-1 font-medium">
             {promptType}
           </div>
         )}
-        <div className="text-sm leading-relaxed">
+        <div>
           {displayedText}
           {isStreaming && !isUser && (
             <span className={cn(

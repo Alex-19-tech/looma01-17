@@ -71,7 +71,7 @@ export function ChatMessage({
       <div className={cn(
         "text-sm leading-relaxed",
         isUser 
-          ? "text-user-message-foreground ml-12" 
+          ? "bg-user-message text-user-message-foreground px-4 py-3 rounded-2xl max-w-[80%] ml-12" 
           : "text-ai-message-foreground mr-12"
       )}>
         {promptType && promptType !== "Auto" && (

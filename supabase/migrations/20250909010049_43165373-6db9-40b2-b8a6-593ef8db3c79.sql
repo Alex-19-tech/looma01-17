@@ -1,0 +1,7 @@
+-- Add new models to the Development & Code Execution category
+INSERT INTO public.ai_models (name, model_id, category, description, provider, is_active, priority) VALUES
+('Cursor', 'cursor', 'Development & Code Execution', 'AI-native code editor built on VS Code, with deep AI pair-programming, context-aware debugging, and natural language coding. Best for engineers who want AI deeply integrated into their daily workflow.', 'cursor', true, 5),
+('Bolt.new', 'bolt-new', 'Development & Code Execution', 'Full-stack app generator powered by AI; you describe the product, and it scaffolds everything end-to-end. Ideal for founders and teams shipping MVPs fast.', 'bolt', true, 4),
+('Lovable.dev', 'lovable-dev', 'Development & Code Execution', 'AI-driven app builder with frontend/backend generation and deployment in one flow. Perfect for no-code/low-code entrepreneurs scaling SaaS ideas.', 'lovable', true, 3),
+('Replit Ghostwriter', 'replit-ghostwriter', 'Development & Code Execution', 'AI embedded inside Replit''s cloud IDE, helping with code generation, debugging, and explanations. Great for collaborative learning and fast prototyping.', 'replit', true, 2),
+('CodiumAI', 'codium-ai', 'Development & Code Execution', 'AI test-generation and code-validation platform that automatically builds meaningful tests and ensures code reliability. Strong for quality-first development teams.', 'codium', true, 1);

@@ -1,0 +1,11 @@
+-- Add new Research & Knowledge Work models
+INSERT INTO public.ai_models (name, description, provider, model_id, category, priority, is_active) VALUES
+('Perplexity AI', 'AI-powered research assistant combining conversational search with citations, ideal for deep knowledge work and fact-checked insights.', 'perplexity', 'llama-3.1-sonar-large-128k-online', 'Research & Knowledge Work', 90, true),
+('Elicit', 'AI research tool that automates literature reviews, extracts key findings from papers, and accelerates evidence-based decision-making.', 'elicit', 'elicit-v1', 'Research & Knowledge Work', 85, true),
+('Scite', 'Smart citation platform that shows whether research supports or contrasts a claim, strengthening scientific rigor.', 'scite', 'scite-v1', 'Research & Knowledge Work', 80, true),
+('Consensus', 'AI that instantly pulls insights from peer-reviewed studies to answer complex questions with evidence-backed summaries.', 'consensus', 'consensus-v1', 'Research & Knowledge Work', 75, true),
+('Research Rabbit', 'Visual research mapping tool that helps discover, connect, and organize academic papers in an intuitive graph.', 'researchrabbit', 'research-rabbit-v1', 'Research & Knowledge Work', 70, true),
+('ChatGPT', 'General-purpose conversational AI capable of answering questions, summarizing information, generating content, and supporting knowledge workers.', 'openai', 'gpt-4o', 'Research & Knowledge Work', 95, true),
+('Grok', 'Real-time AI assistant built into X (formerly Twitter), optimized for social trend analysis, fast answers, and cultural context.', 'x-ai', 'grok-beta', 'Research & Knowledge Work', 65, true),
+('Gemini', 'Google''s flagship multimodal AI, strong for integrating text, vision, and reasoning in research-heavy workflows.', 'google', 'gemini-pro', 'Research & Knowledge Work', 85, true),
+('DeepSeek', 'Advanced AI model specializing in reasoning, complex problem-solving, and computational research tasks.', 'deepseek', 'deepseek-chat', 'Research & Knowledge Work', 80, true);

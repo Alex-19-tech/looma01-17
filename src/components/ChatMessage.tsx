@@ -27,8 +27,9 @@ export function ChatMessage({
       setDisplayedText(streamingText || "");
       setShowCursor(true);
     } else {
-      // When streaming stops, show final message or keep last streamed text
-      setDisplayedText(message || streamingText || "");
+      // When streaming stops, preserve the last streamed text if message is empty
+      const finalText = message || streamingText || displayedText || "";
+      setDisplayedText(finalText);
       setShowCursor(false);
     }
   }, [isStreaming, streamingText, message]);

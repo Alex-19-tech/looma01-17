@@ -13,7 +13,6 @@ import { TemplateSelector } from "./TemplateSelector";
 import { TemplatePreview } from "./TemplatePreview";
 import { TypingDots } from "./TypingDots";
 import { useStreamingMessage } from "@/hooks/useStreamingMessage";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Loader2, Sparkles, Copy, Send } from "lucide-react";
 
 interface Message {
@@ -128,7 +127,6 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userProfileOpen, setUserProfileOpen] = useState(false);
-  const isMobile = useIsMobile();
   const [pendingConfirmation, setPendingConfirmation] = useState<string>('');
   const [showClarifyButton, setShowClarifyButton] = useState(false);
   const [isInputAlwaysActive, setIsInputAlwaysActive] = useState(true);
@@ -977,35 +975,23 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Desktop Sidebar - Fixed on left */}
-      {!isMobile && (
-        <div className="w-80 flex-shrink-0">
-          <ChatSidebar 
-            isOpen={true} 
-            onClose={() => {}} 
-            onUserProfileClick={() => setUserProfileOpen(!userProfileOpen)} 
-          />
-        </div>
-      )}
-      
-      {/* Mobile Sidebar - Overlay */}
-      {isMobile && (
-        <ChatSidebar 
-          isOpen={sidebarOpen} 
-          onClose={() => setSidebarOpen(false)} 
-          onUserProfileClick={() => setUserProfileOpen(!userProfileOpen)} 
-        />
-      )}
-      
-      <div className="flex flex-col flex-1 min-w-0">
-        <TopNavbar 
-          onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
-          onUserClick={() => setUserProfileOpen(!userProfileOpen)} 
-        />
-        
-        <div className="flex-1 overflow-y-auto px-4 pt-20 pb-32">
-          <div className="max-w-4xl mx-auto">
+    <div className="flex flex-col h-screen bg-background relative">
+      <TopNavbar 
+        onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
+        onUserClick={() => setUserProfileOpen(!userProfileOpen)} 
+      />
+      <ChatSidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        onUserProfileClick={() => setUserProfileOpen(!userProfileOpen)} 
+      />
+      <UserProfileDrawer 
+        isOpen={userProfileOpen} 
+        onClose={() => setUserProfileOpen(false)} 
+      />
+
+      <div className="flex-1 overflow-y-auto px-4 pt-20 pb-32">
+        <div className="max-w-4xl mx-auto">
           {/* New Chat Button */}
           {messages.length > 0 && (
             <div className="mb-4 flex justify-center">
@@ -1138,22 +1124,16 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
         </div>
       </div>
 
-        <div className="fixed bottom-0 left-0 right-0 bg-background backdrop-blur-sm p-2 border-t">
-          <div className="w-full">
-            <ChatInput 
-              isLandingMode={false}
-              onSendMessage={handleNewMessage}
-              disabled={isLoading && currentStep === 'generating'}
-              placeholder={isRequestingClarification ? "Please provide more details..." : "How can I help you today?"}
-            />
-          </div>
+      <div className="fixed bottom-0 left-0 right-0 bg-background backdrop-blur-sm p-2 border-t">
+        <div className="w-full">
+          <ChatInput 
+            isLandingMode={false}
+            onSendMessage={handleNewMessage}
+            disabled={isLoading && currentStep === 'generating'}
+            placeholder={isRequestingClarification ? "Please provide more details..." : "How can I help you today?"}
+          />
         </div>
       </div>
-      
-      <UserProfileDrawer 
-        isOpen={userProfileOpen} 
-        onClose={() => setUserProfileOpen(false)} 
-      />
       
       {/* Template Preview Modal */}
       <TemplatePreview

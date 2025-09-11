@@ -1138,9 +1138,7 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
         </div>
       </div>
 
-        <div className={`fixed bottom-0 right-0 bg-background backdrop-blur-sm p-2 border-t ${
-          !isMobile ? 'left-80' : 'left-0'
-        }`}>
+        <div className="fixed bottom-0 left-0 right-0 bg-background backdrop-blur-sm p-2 border-t">
           <div className="w-full">
             <ChatInput 
               isLandingMode={false}

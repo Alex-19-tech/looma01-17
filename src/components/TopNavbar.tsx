@@ -1,5 +1,6 @@
 import { User } from "lucide-react";
 import { Button } from "./ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TopNavbarProps {
   onMenuClick: () => void;
@@ -7,22 +8,28 @@ interface TopNavbarProps {
 }
 
 export function TopNavbar({ onMenuClick, onUserClick }: TopNavbarProps) {
+  const isMobile = useIsMobile();
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
       <div className="flex items-center justify-between h-16 px-6">
-        {/* Left: Hamburger Menu */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onMenuClick}
-          className="h-10 w-10 hover:bg-accent/50 transition-all duration-200"
-        >
-          <img 
-            src="/burger-menu-left-svgrepo-com.svg" 
-            alt="Menu" 
-            className="h-6 w-6 brightness-0 invert" 
-          />
-        </Button>
+        {/* Left: Hamburger Menu - Only on mobile */}
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onMenuClick}
+            className="h-10 w-10 hover:bg-accent/50 transition-all duration-200"
+          >
+            <img 
+              src="/burger-menu-left-svgrepo-com.svg" 
+              alt="Menu" 
+              className="h-6 w-6 brightness-0 invert" 
+            />
+          </Button>
+        )}
+        
+        {/* Desktop: Logo spacing */}
+        {!isMobile && <div className="w-10" />}
         
         {/* Center: Logo and Name */}
         <div className="flex items-center gap-4">

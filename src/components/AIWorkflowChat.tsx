@@ -13,7 +13,7 @@ import { TemplateSelector } from "./TemplateSelector";
 import { TemplatePreview } from "./TemplatePreview";
 import { TypingDots } from "./TypingDots";
 import { useStreamingMessage } from "@/hooks/useStreamingMessage";
-import { Loader2, Sparkles, Copy, Send } from "lucide-react";
+import { Loader2, Sparkles, Copy, Send, User } from "lucide-react";
 
 interface Message {
   id: string;
@@ -975,164 +975,348 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background relative">
-      <TopNavbar 
-        onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
-        onUserClick={() => setUserProfileOpen(!userProfileOpen)} 
-      />
-      <ChatSidebar 
-        isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
-        onUserProfileClick={() => setUserProfileOpen(!userProfileOpen)} 
-      />
-      <UserProfileDrawer 
-        isOpen={userProfileOpen} 
-        onClose={() => setUserProfileOpen(false)} 
-      />
+    <div className="min-h-screen bg-background">
+      {/* Mobile Layout */}
+      <div className="lg:hidden">
+        <div className="flex flex-col h-screen bg-background relative">
+          <TopNavbar 
+            onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
+            onUserClick={() => setUserProfileOpen(!userProfileOpen)} 
+          />
+          <ChatSidebar 
+            isOpen={sidebarOpen} 
+            onClose={() => setSidebarOpen(false)} 
+            onUserProfileClick={() => setUserProfileOpen(!userProfileOpen)} 
+          />
+          <UserProfileDrawer 
+            isOpen={userProfileOpen} 
+            onClose={() => setUserProfileOpen(false)} 
+          />
 
-      <div className="flex-1 overflow-y-auto px-4 pt-20 pb-32">
-        <div className="max-w-4xl mx-auto">
-          {/* New Chat Button */}
-          {messages.length > 0 && (
-            <div className="mb-4 flex justify-center">
-              <Button
-                variant="outline"
-                onClick={handleNewChat}
-                className="mb-4"
-              >
-                Start New Chat
-              </Button>
+          <div className="flex-1 overflow-y-auto px-4 pt-20 pb-32">
+            <div className="max-w-4xl mx-auto">
+              {/* New Chat Button */}
+              {messages.length > 0 && (
+                <div className="mb-4 flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={handleNewChat}
+                    className="mb-4"
+                  >
+                    Start New Chat
+                  </Button>
+                </div>
+              )}
+              
+              {messages.map((message) => (
+                <div key={message.id}>
+                  <ChatMessage
+                    message={message.content}
+                    isUser={getMessageType(message) === 'user'}
+                    isStreaming={isStreaming(message.id)}
+                    streamingText={getStreamingText(message.id)}
+                    onStreamComplete={() => {
+                      const finalText = getStreamingText(message.id);
+                      if (finalText) {
+                        setMessages(prev => prev.map(m => 
+                          m.id === message.id ? { ...m, content: finalText } : m
+                        ));
+                      }
+                      completeStream(message.id);
+                    }}
+                  />
+                  
+                  {/* Show confirmation buttons ONLY when ready for confirmation */}
+                  {message.message_type === 'ai_understanding' && 
+                   clarificationStage === 'ready_for_confirmation' && 
+                   currentStep === 'understanding' && (
+                    <div className="flex gap-2 mb-4 justify-end mr-12">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleConfirmUnderstanding("Yes, that's exactly what I want to do.")}
+                        disabled={isLoading}
+                      >
+                        ✅ Yes, Correct
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClarifyRequest}
+                        disabled={isLoading}
+                      >
+                        ✏️ Let Me Clarify
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Show only copy button for completed responses */}
+                  {message.message_type === 'ai_response' && currentStep === 'complete' && (
+                    <div className="flex gap-2 mb-4 justify-end mr-12">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCopyPrompt(message.content)}
+                        className="flex items-center gap-1"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy Prompt
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Show confirmation buttons for clarification responses - ALWAYS stay in Step 2 */}
+                  {message.message_type === 'ai_clarification_response' && currentStep === 'understanding' && (
+                    <div className="flex gap-2 mb-4 justify-end mr-12">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleConfirmUnderstanding("Yes, correct")}
+                        disabled={isLoading}
+                      >
+                        Yes, Correct
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClarifyRequest}
+                        disabled={isLoading}
+                      >
+                        Let Me Clarify
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {renderModelSelection()}
+
+              {/* Template Selection - Show after model is selected */}
+              {currentStep === 'model_selection' && selectedModel && showTemplateSelection && suggestedTemplates && (
+                <div className="mb-6 p-4 border rounded-lg bg-card">
+                  <TemplateSelector 
+                    templates={getFilteredTemplates()}
+                    onSelectTemplate={handleSelectTemplate}
+                    onPreviewTemplate={handlePreviewTemplate}
+                    userInput={messages.find(m => m.message_type === 'user_input')?.content || ''}
+                    selectedModel={selectedModel}
+                    modelTemplateCategory={selectedModel ? modelToTemplateCategoryMap[selectedModel] : undefined}
+                  />
+                  
+                  <div className="mt-4 flex justify-end">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleSkipTemplates}
+                      className="text-sm"
+                    >
+                      Skip Templates & Continue
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Clean typing dots animation when AI is processing */}
+              {isLoading && (currentStep === 'understanding' || currentStep === 'generating' || currentStep === 'input') && (
+                <div className="flex w-full animate-fade-in justify-start mb-4">
+                  <TypingDots className="text-ai-message-foreground" />
+                </div>
+              )}
+              
+              {/* Scroll anchor */}
+              <div ref={messagesEndRef} />
             </div>
-          )}
-          
-          {messages.map((message) => (
-            <div key={message.id}>
-              <ChatMessage
-                message={message.content}
-                isUser={getMessageType(message) === 'user'}
-                isStreaming={isStreaming(message.id)}
-                streamingText={getStreamingText(message.id)}
-                onStreamComplete={() => {
-                  const finalText = getStreamingText(message.id);
-                  if (finalText) {
-                    setMessages(prev => prev.map(m => 
-                      m.id === message.id ? { ...m, content: finalText } : m
-                    ));
-                  }
-                  completeStream(message.id);
-                }}
+          </div>
+
+          <div className="fixed bottom-0 left-0 right-0 bg-background backdrop-blur-sm p-2 border-t">
+            <div className="w-full">
+              <ChatInput 
+                isLandingMode={false}
+                onSendMessage={handleNewMessage}
+                disabled={isLoading && currentStep === 'generating'}
+                placeholder={isRequestingClarification ? "Please provide more details..." : "How can I help you today?"}
               />
-              
-              {/* Show confirmation buttons ONLY when ready for confirmation */}
-              {message.message_type === 'ai_understanding' && 
-               clarificationStage === 'ready_for_confirmation' && 
-               currentStep === 'understanding' && (
-                <div className="flex gap-2 mb-4 justify-end mr-12">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleConfirmUnderstanding("Yes, that's exactly what I want to do.")}
-                    disabled={isLoading}
-                  >
-                    ✅ Yes, Correct
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClarifyRequest}
-                    disabled={isLoading}
-                  >
-                    ✏️ Let Me Clarify
-                  </Button>
-                </div>
-              )}
-              
-              {/* Show only copy button for completed responses */}
-              {message.message_type === 'ai_response' && currentStep === 'complete' && (
-                <div className="flex gap-2 mb-4 justify-end mr-12">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCopyPrompt(message.content)}
-                    className="flex items-center gap-1"
-                  >
-                    <Copy className="h-4 w-4" />
-                    Copy Prompt
-                  </Button>
-                </div>
-              )}
-
-              {/* Show confirmation buttons for clarification responses - ALWAYS stay in Step 2 */}
-              {message.message_type === 'ai_clarification_response' && currentStep === 'understanding' && (
-                <div className="flex gap-2 mb-4 justify-end mr-12">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleConfirmUnderstanding("Yes, correct")}
-                    disabled={isLoading}
-                  >
-                    Yes, Correct
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClarifyRequest}
-                    disabled={isLoading}
-                  >
-                    Let Me Clarify
-                  </Button>
-                </div>
-              )}
             </div>
-          ))}
-          
-          {renderModelSelection()}
-
-          {/* Template Selection - Show after model is selected */}
-          {currentStep === 'model_selection' && selectedModel && showTemplateSelection && suggestedTemplates && (
-            <div className="mb-6 p-4 border rounded-lg bg-card">
-              <TemplateSelector 
-                templates={getFilteredTemplates()}
-                onSelectTemplate={handleSelectTemplate}
-                onPreviewTemplate={handlePreviewTemplate}
-                userInput={messages.find(m => m.message_type === 'user_input')?.content || ''}
-                selectedModel={selectedModel}
-                modelTemplateCategory={selectedModel ? modelToTemplateCategoryMap[selectedModel] : undefined}
-              />
-              
-              <div className="mt-4 flex justify-end">
-                <Button 
-                  variant="outline" 
-                  onClick={handleSkipTemplates}
-                  className="text-sm"
-                >
-                  Skip Templates & Continue
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          {/* Clean typing dots animation when AI is processing */}
-          {isLoading && (currentStep === 'understanding' || currentStep === 'generating' || currentStep === 'input') && (
-            <div className="flex w-full animate-fade-in justify-start mb-4">
-              <TypingDots className="text-ai-message-foreground" />
-            </div>
-          )}
-          
-          {/* Scroll anchor */}
-          <div ref={messagesEndRef} />
+          </div>
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-background backdrop-blur-sm p-2 border-t">
-        <div className="w-full">
-          <ChatInput 
-            isLandingMode={false}
-            onSendMessage={handleNewMessage}
-            disabled={isLoading && currentStep === 'generating'}
-            placeholder={isRequestingClarification ? "Please provide more details..." : "How can I help you today?"}
-          />
+      {/* Desktop Layout */}
+      <div className="hidden lg:grid lg:grid-cols-[320px_1fr] h-screen">
+        {/* Fixed Sidebar */}
+        <ChatSidebar 
+          isOpen={true} 
+          onClose={() => {}} 
+          onUserProfileClick={() => setUserProfileOpen(!userProfileOpen)} 
+        />
+
+        {/* Chat Area */}
+        <div className="flex flex-col min-w-0 h-full">
+          {/* Desktop Header */}
+          <div className="h-16 flex items-center justify-end px-6 border-b border-border bg-background flex-shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setUserProfileOpen(!userProfileOpen)}
+              className="h-10 w-10 hover:bg-accent/50 transition-all duration-200"
+            >
+              <User className="h-6 w-6 text-foreground" />
+            </Button>
+          </div>
+
+          {/* Chat Content */}
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 overflow-y-auto px-6">
+              <div className="max-w-4xl mx-auto py-6">
+                {/* New Chat Button */}
+                {messages.length > 0 && (
+                  <div className="mb-4 flex justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={handleNewChat}
+                      className="mb-4"
+                    >
+                      Start New Chat
+                    </Button>
+                  </div>
+                )}
+                
+                {messages.map((message) => (
+                  <div key={message.id}>
+                    <ChatMessage
+                      message={message.content}
+                      isUser={getMessageType(message) === 'user'}
+                      isStreaming={isStreaming(message.id)}
+                      streamingText={getStreamingText(message.id)}
+                      onStreamComplete={() => {
+                        const finalText = getStreamingText(message.id);
+                        if (finalText) {
+                          setMessages(prev => prev.map(m => 
+                            m.id === message.id ? { ...m, content: finalText } : m
+                          ));
+                        }
+                        completeStream(message.id);
+                      }}
+                    />
+                    
+                    {/* Show confirmation buttons ONLY when ready for confirmation */}
+                    {message.message_type === 'ai_understanding' && 
+                     clarificationStage === 'ready_for_confirmation' && 
+                     currentStep === 'understanding' && (
+                      <div className="flex gap-2 mb-4 justify-end mr-12">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleConfirmUnderstanding("Yes, that's exactly what I want to do.")}
+                          disabled={isLoading}
+                        >
+                          ✅ Yes, Correct
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleClarifyRequest}
+                          disabled={isLoading}
+                        >
+                          ✏️ Let Me Clarify
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {/* Show only copy button for completed responses */}
+                    {message.message_type === 'ai_response' && currentStep === 'complete' && (
+                      <div className="flex gap-2 mb-4 justify-end mr-12">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCopyPrompt(message.content)}
+                          className="flex items-center gap-1"
+                        >
+                          <Copy className="h-4 w-4" />
+                          Copy Prompt
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Show confirmation buttons for clarification responses - ALWAYS stay in Step 2 */}
+                    {message.message_type === 'ai_clarification_response' && currentStep === 'understanding' && (
+                      <div className="flex gap-2 mb-4 justify-end mr-12">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleConfirmUnderstanding("Yes, correct")}
+                          disabled={isLoading}
+                        >
+                          Yes, Correct
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleClarifyRequest}
+                          disabled={isLoading}
+                        >
+                          Let Me Clarify
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {renderModelSelection()}
+
+                {/* Template Selection - Show after model is selected */}
+                {currentStep === 'model_selection' && selectedModel && showTemplateSelection && suggestedTemplates && (
+                  <div className="mb-6 p-4 border rounded-lg bg-card">
+                    <TemplateSelector 
+                      templates={getFilteredTemplates()}
+                      onSelectTemplate={handleSelectTemplate}
+                      onPreviewTemplate={handlePreviewTemplate}
+                      userInput={messages.find(m => m.message_type === 'user_input')?.content || ''}
+                      selectedModel={selectedModel}
+                      modelTemplateCategory={selectedModel ? modelToTemplateCategoryMap[selectedModel] : undefined}
+                    />
+                    
+                    <div className="mt-4 flex justify-end">
+                      <Button 
+                        variant="outline" 
+                        onClick={handleSkipTemplates}
+                        className="text-sm"
+                      >
+                        Skip Templates & Continue
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Clean typing dots animation when AI is processing */}
+                {isLoading && (currentStep === 'understanding' || currentStep === 'generating' || currentStep === 'input') && (
+                  <div className="flex w-full animate-fade-in justify-start mb-4">
+                    <TypingDots className="text-ai-message-foreground" />
+                  </div>
+                )}
+                
+                {/* Scroll anchor */}
+                <div ref={messagesEndRef} />
+              </div>
+            </div>
+
+            {/* Chat Input - Fixed at bottom of chat area */}
+            <div className="flex-shrink-0 p-6 border-t border-border bg-background">
+              <div className="max-w-4xl mx-auto">
+                <ChatInput 
+                  isLandingMode={false}
+                  onSendMessage={handleNewMessage}
+                  disabled={isLoading && currentStep === 'generating'}
+                  placeholder={isRequestingClarification ? "Please provide more details..." : "How can I help you today?"}
+                />
+              </div>
+            </div>
+          </div>
         </div>
+
+        <UserProfileDrawer 
+          isOpen={userProfileOpen} 
+          onClose={() => setUserProfileOpen(false)} 
+        />
       </div>
       
       {/* Template Preview Modal */}

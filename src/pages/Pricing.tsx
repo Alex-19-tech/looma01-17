@@ -88,75 +88,76 @@ const Pricing = () => {
           </div>
         </div>
 
-        {/* Pro Access Tier */}
-        <Card className="bg-gradient-to-br from-white/5 to-white/10 border-white/20 relative overflow-hidden mb-16">
-          <div className="absolute top-4 right-4">
-            <Badge className="bg-primary text-primary-foreground">
-              Popular
-            </Badge>
-          </div>
-          
-          <CardHeader className="text-center pb-8">
-            <CardTitle className="text-3xl font-bold text-white mb-4">Pro Access</CardTitle>
-            <div className="flex items-baseline justify-center gap-2">
-              <span className="text-6xl font-bold text-white">$10.00</span>
-              <span className="text-xl text-white/60">/month</span>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            <Button 
-              onClick={handleSubscribe}
-              disabled={isProcessing || loading}
-              className="w-full bg-white text-black hover:bg-white/90 text-lg py-6 rounded-xl"
-            >
-              {isProcessing ? 'Processing...' : !user ? 'Sign In to Subscribe' : 'Start Pro Access'}
-            </Button>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              {[
-                "Unlimited optimized prompts",
-                "Multi-model support (Grok, Claude, OpenAI, Lovable.dev)",
-                "Credit/usage dashboard",
-                "Auto prompt optimization",
-                "Research prompt types",
-                "Creative prompt types",
-                "Instructional prompt types",
-                "Analytical prompt types",
-                "Problem-solving prompt types",
-                "Priority support"
-              ].map((feature, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                  <span className="text-white">{feature}</span>
+        {/* Pricing Cards - Professional Layout */}
+        <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-8 mb-16 max-w-7xl mx-auto">
+          {/* Pro Access Tier - Featured */}
+          <div className="lg:col-start-2 relative">
+            <Card className="bg-gradient-to-br from-white/10 to-white/5 border-white/30 relative overflow-hidden h-full transform scale-105 shadow-2xl">
+              <div className="absolute top-6 left-1/2 -translate-x-1/2">
+                <Badge className="bg-gradient-to-r from-primary to-accent text-primary-foreground px-4 py-1 text-sm font-semibold">
+                  Most Popular
+                </Badge>
+              </div>
+              
+              <CardHeader className="text-center pt-16 pb-8">
+                <CardTitle className="text-3xl font-bold text-white mb-4">Pro Access</CardTitle>
+                <div className="flex items-baseline justify-center gap-2 mb-4">
+                  <span className="text-6xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">$10</span>
+                  <span className="text-xl text-white/60">/month</span>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <p className="text-white/70 text-sm">Perfect for professionals</p>
+              </CardHeader>
 
-        {/* Future Tiers */}
-        <div className="grid md:grid-cols-2 gap-8 mb-16">
+              <CardContent className="px-8 pb-8">
+                <Button 
+                  onClick={handleSubscribe}
+                  disabled={isProcessing || loading}
+                  className="w-full bg-white text-black hover:bg-white/90 text-lg py-4 rounded-xl font-semibold shadow-lg mb-8"
+                >
+                  {isProcessing ? 'Processing...' : !user ? 'Sign In to Subscribe' : 'Get Pro Access'}
+                </Button>
+
+                <div className="space-y-4">
+                  {[
+                    "Unlimited optimized prompts",
+                    "Multi-model support (Grok, Claude, OpenAI, Lovable.dev)",
+                    "Credit/usage dashboard",
+                    "Auto prompt optimization",
+                    "Research & creative prompt types",
+                    "Advanced analytical features",
+                    "Priority support"
+                  ].map((feature, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                      <span className="text-white text-sm">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Team Tier */}
-          <Card className="bg-white/5 border-white/10 opacity-60">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl text-white mb-2">Team</CardTitle>
-              <div className="flex items-baseline justify-center gap-2">
-                <span className="text-4xl font-bold text-white">$75.00</span>
+          <Card className="bg-white/5 border-white/10 opacity-75 hover:opacity-90 transition-opacity h-full">
+            <CardHeader className="text-center pt-12 pb-6">
+              <CardTitle className="text-2xl text-white mb-4">Team</CardTitle>
+              <div className="flex items-baseline justify-center gap-2 mb-2">
+                <span className="text-4xl font-bold text-white">$75</span>
                 <span className="text-lg text-white/60">/month per user</span>
               </div>
-              <Badge variant="outline" className="border-white/20 text-white/60 mt-2">
+              <Badge variant="outline" className="border-white/20 text-white/60 bg-white/5">
                 Coming Soon
               </Badge>
+              <p className="text-white/60 text-sm mt-2">For growing teams</p>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="px-6">
+              <div className="space-y-3 mb-6">
                 {[
+                  "Everything in Pro Access",
                   "Shared chat history",
                   "Team dashboard & analytics", 
                   "Admin controls",
-                  "Collaboration tools",
-                  "Everything in Pro Access"
+                  "Collaboration tools"
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center gap-3 text-white/60">
                     <Check className="h-4 w-4 flex-shrink-0" />
@@ -164,26 +165,30 @@ const Pricing = () => {
                   </div>
                 ))}
               </div>
+              <Button disabled className="w-full bg-white/10 text-white/60 py-3 rounded-xl">
+                Notify Me
+              </Button>
             </CardContent>
           </Card>
 
           {/* Enterprise Tier */}
-          <Card className="bg-white/5 border-white/10 opacity-60">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl text-white mb-2">Enterprise</CardTitle>
-              <div className="text-2xl font-bold text-white mb-2">Custom pricing</div>
-              <Badge variant="outline" className="border-white/20 text-white/60">
+          <Card className="bg-white/5 border-white/10 opacity-75 hover:opacity-90 transition-opacity h-full lg:col-start-3 lg:row-start-1">
+            <CardHeader className="text-center pt-12 pb-6">
+              <CardTitle className="text-2xl text-white mb-4">Enterprise</CardTitle>
+              <div className="text-2xl font-bold text-white mb-2">Custom</div>
+              <Badge variant="outline" className="border-white/20 text-white/60 bg-white/5">
                 Coming Soon
               </Badge>
+              <p className="text-white/60 text-sm mt-2">For large organizations</p>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="px-6">
+              <div className="space-y-3 mb-6">
                 {[
+                  "Everything in Team",
                   "Advanced integrations (Notion, Canva, Figma)",
                   "Enterprise analytics dashboard",
                   "Dedicated onboarding & support",
-                  "Custom model training",
-                  "Everything in Team"
+                  "Custom model training"
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center gap-3 text-white/60">
                     <Check className="h-4 w-4 flex-shrink-0" />
@@ -191,6 +196,9 @@ const Pricing = () => {
                   </div>
                 ))}
               </div>
+              <Button disabled className="w-full bg-white/10 text-white/60 py-3 rounded-xl">
+                Contact Sales
+              </Button>
             </CardContent>
           </Card>
         </div>

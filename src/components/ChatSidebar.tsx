@@ -151,44 +151,47 @@ export function ChatSidebar({ isOpen, onClose, onUserProfileClick }: ChatSidebar
         isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center gap-3">
-              <img 
-                src="/Looma.svg" 
-                alt="Prelix" 
-                className="h-14 w-14" 
-              />
-              <h1 className="text-2xl font-semibold text-foreground">Prelix</h1>
-            </div>
-          </div>
-          
-          {/* Header */}
-          <div className="p-4 border-b border-border space-y-3">
-            <div className="space-y-2">
-              <Button 
-                className="w-full justify-start gap-2 bg-brand-primary hover:bg-brand-primary/90 text-brand-primary-foreground" 
-                variant="default"
-                onClick={handleNewAIChat}
-              >
-                <Sparkles className="h-4 w-4" />
-                New AI Chat
-              </Button>
+          {/* Fixed Top Section - Logo & Header */}
+          <div className="flex-shrink-0">
+            {/* Logo */}
+            <div className="p-4 border-b border-border">
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/Looma.svg" 
+                  alt="Prelix" 
+                  className="h-14 w-14" 
+                />
+                <h1 className="text-2xl font-semibold text-foreground">Prelix</h1>
+              </div>
             </div>
             
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search conversations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+            {/* Header */}
+            <div className="p-4 border-b border-border space-y-3">
+              <div className="space-y-2">
+                <Button 
+                  className="w-full justify-start gap-2 bg-brand-primary hover:bg-brand-primary/90 text-brand-primary-foreground" 
+                  variant="default"
+                  onClick={handleNewAIChat}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  New AI Chat
+                </Button>
+              </div>
+              
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search conversations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Chat History */}
+          {/* Scrollable Chat History - Only this section scrolls */}
           <ScrollArea className="flex-1 p-2">
             <div className="space-y-1">
               {isLoading ? (
@@ -238,8 +241,8 @@ export function ChatSidebar({ isOpen, onClose, onUserProfileClick }: ChatSidebar
             </div>
           </ScrollArea>
 
-          {/* User Profile */}
-          <div className="p-4 border-t border-border">
+          {/* Fixed Bottom Section - User Profile */}
+          <div className="flex-shrink-0 p-4 border-t border-border">
             <div 
               className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent cursor-pointer"
               onClick={onUserProfileClick}

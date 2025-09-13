@@ -175,25 +175,6 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
         </Select>
       </div>
 
-      <Separator />
-
-      {/* Model Settings */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="font-medium text-foreground">Use Model Mode Selector</span>
-          <div className="relative">
-            <input
-              type="checkbox"
-              defaultChecked
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-          </div>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Choose between individual models or simplified mode selection
-        </p>
-      </div>
 
       <Separator />
 

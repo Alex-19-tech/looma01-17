@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, FunnelChart, Funnel, Cell } from "recharts";
-import { TrendingUp, TrendingDown, Users, UserCheck, UserX, BarChart3, AlertTriangle } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, FunnelChart, Funnel, Cell, AreaChart, Area, BarChart, Bar } from "recharts";
+import { AlertTriangle, Clock, Users, TrendingUp, TrendingDown, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -15,12 +14,18 @@ interface MetricData {
   metadata: any;
 }
 
-interface KPICardProps {
-  title: string;
-  value: string;
-  change: string;
-  trend: "up" | "down";
-  icon: React.ComponentType<any>;
+interface CohortData {
+  cohort_month: string;
+  period_number: number;
+  retention_rate: number;
+  users_count: number;
+}
+
+interface ConversionData {
+  stage: string;
+  users_count: number;
+  conversion_rate: number;
+  stage_order: number;
 }
 
 interface Alert {
@@ -30,48 +35,48 @@ interface Alert {
   threshold_value: number;
 }
 
-const KPICard = ({ title, value, change, trend, icon: Icon }: KPICardProps) => (
-  <Card className="relative overflow-hidden border-electric-blue/20 bg-card hover:border-electric-blue/40 transition-all duration-300">
-    <div className="absolute inset-0 bg-gradient-to-br from-electric-blue/5 to-transparent" />
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-      <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-electric-blue" />
-    </CardHeader>
-    <CardContent className="relative z-10">
-      <div className="text-2xl font-bold text-foreground">{value}</div>
-      <div className="flex items-center gap-1 text-xs">
-        {trend === "up" ? (
-          <TrendingUp className="h-3 w-3 text-green-500" />
-        ) : (
-          <TrendingDown className="h-3 w-3 text-red-500" />
-        )}
-        <span className={trend === "up" ? "text-green-500" : "text-red-500"}>
-          {change}
-        </span>
-      </div>
-    </CardContent>
-  </Card>
-);
-
 export default function Metrics() {
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<MetricData[]>([]);
+  const [cohortData, setCohortData] = useState<CohortData[]>([]);
+  const [conversionData, setConversionData] = useState<ConversionData[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchMetrics = async () => {
+  const fetchAllData = async () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      // Fetch metrics
+      const { data: metricsData, error: metricsError } = await supabase
         .from('metrics')
         .select('*')
         .eq('user_id', user.id)
         .order('timestamp', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
-      setMetrics(data || []);
+      if (metricsError) throw metricsError;
+      setMetrics(metricsData || []);
+
+      // Fetch cohort retention data
+      const { data: cohortRetentionData, error: cohortError } = await supabase
+        .from('cohort_retention')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('cohort_month', { ascending: true });
+
+      if (cohortError) throw cohortError;
+      setCohortData(cohortRetentionData || []);
+
+      // Fetch conversion funnel data
+      const { data: funnelData, error: funnelError } = await supabase
+        .from('conversion_funnels')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('stage_order', { ascending: true });
+
+      if (funnelError) throw funnelError;
+      setConversionData(funnelData || []);
 
       // Fetch alerts
       const { data: alertsData, error: alertsError } = await supabase
@@ -83,18 +88,18 @@ export default function Metrics() {
       if (alertsError) throw alertsError;
       setAlerts(alertsData || []);
     } catch (error) {
-      console.error('Error fetching metrics:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMetrics();
+    fetchAllData();
 
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('metrics-changes')
+    // Set up real-time subscriptions for all tables
+    const metricsChannel = supabase
+      .channel('metrics-realtime')
       .on(
         'postgres_changes',
         {
@@ -103,35 +108,34 @@ export default function Metrics() {
           table: 'metrics',
           filter: `user_id=eq.${user?.id}`
         },
-        () => {
-          fetchMetrics();
-        }
+        () => fetchAllData()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cohort_retention',
+          filter: `user_id=eq.${user?.id}`
+        },
+        () => fetchAllData()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversion_funnels',
+          filter: `user_id=eq.${user?.id}`
+        },
+        () => fetchAllData()
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(metricsChannel);
     };
   }, [user]);
-
-  const getLatestMetricValue = (type: string) => {
-    const metric = metrics.find(m => m.metric_type === type);
-    return metric ? metric.value : 0;
-  };
-
-  const getMetricTrend = (type: string) => {
-    const typeMetrics = metrics.filter(m => m.metric_type === type).slice(0, 2);
-    if (typeMetrics.length < 2) return { change: "0%", trend: "up" as const };
-    
-    const current = typeMetrics[0].value;
-    const previous = typeMetrics[1].value;
-    const percentChange = ((current - previous) / previous * 100).toFixed(1);
-    
-    return {
-      change: `${Math.abs(Number(percentChange))}%`,
-      trend: Number(percentChange) >= 0 ? "up" as const : "down" as const
-    };
-  };
 
   const getChartData = (type: string) => {
     return metrics
@@ -139,26 +143,57 @@ export default function Metrics() {
       .reverse()
       .slice(-30)
       .map(m => ({
-        date: new Date(m.timestamp).toLocaleDateString(),
-        value: Number(m.value)
+        date: new Date(m.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        value: Number(m.value),
+        timestamp: m.timestamp
       }));
   };
 
-  const funnelData = [
-    { name: 'Initial Prompt', value: 1000, fill: 'hsl(var(--electric-blue))' },
-    { name: 'Template Applied', value: 800, fill: 'hsl(var(--electric-blue-light))' },
-    { name: 'Optimization Complete', value: 600, fill: 'hsl(var(--primary))' },
-    { name: 'User Satisfied', value: 450, fill: 'hsl(var(--electric-blue-dark))' }
-  ];
+  const getCohortChartData = () => {
+    const cohortMap = new Map();
+    cohortData.forEach(item => {
+      const cohort = item.cohort_month;
+      if (!cohortMap.has(cohort)) {
+        cohortMap.set(cohort, {});
+      }
+      cohortMap.get(cohort)[`period_${item.period_number}`] = item.retention_rate;
+    });
+
+    return Array.from(cohortMap.entries()).map(([cohort, data]) => ({
+      cohort: new Date(cohort).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }),
+      ...data
+    }));
+  };
+
+  const getFunnelChartData = () => {
+    return conversionData.map(item => ({
+      name: item.stage,
+      value: item.users_count,
+      fill: item.stage_order === 1 ? 'hsl(var(--electric-blue))' :
+            item.stage_order === 2 ? 'hsl(var(--electric-blue-light))' :
+            item.stage_order === 3 ? 'hsl(var(--primary))' : 
+            'hsl(var(--electric-blue-dark))'
+    }));
+  };
+
+  const getTemplateUsageData = () => {
+    return [
+      { name: 'Code Generation', usage: 450, fill: 'hsl(var(--electric-blue))' },
+      { name: 'Bug Fixing', usage: 380, fill: 'hsl(var(--electric-blue-light))' },
+      { name: 'Documentation', usage: 320, fill: 'hsl(var(--primary))' },
+      { name: 'Testing', usage: 280, fill: 'hsl(var(--electric-blue-dark))' },
+      { name: 'Refactoring', usage: 240, fill: 'hsl(var(--muted))' }
+    ];
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="animate-pulse p-8">
           <div className="h-8 bg-muted rounded w-48 mb-8"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-32 bg-muted rounded"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-96 bg-muted rounded"></div>
             ))}
           </div>
         </div>
@@ -198,80 +233,58 @@ export default function Metrics() {
           </div>
         )}
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <KPICard
-            title="Time to Optimized Prompt"
-            value={`${getLatestMetricValue('time_to_optimized').toFixed(1)}s`}
-            change={getMetricTrend('time_to_optimized').change}
-            trend={getMetricTrend('time_to_optimized').trend}
-            icon={BarChart3}
-          />
-          <KPICard
-            title="Conversion Rate"
-            value={`${getLatestMetricValue('conversion_rate').toFixed(1)}%`}
-            change={getMetricTrend('conversion_rate').change}
-            trend={getMetricTrend('conversion_rate').trend}
-            icon={TrendingUp}
-          />
-          <KPICard
-            title="Retention"
-            value={`${getLatestMetricValue('retention').toFixed(1)}%`}
-            change={getMetricTrend('retention').change}
-            trend={getMetricTrend('retention').trend}
-            icon={UserCheck}
-          />
-          <KPICard
-            title="Churn Rate"
-            value={`${getLatestMetricValue('churn_rate').toFixed(1)}%`}
-            change={getMetricTrend('churn_rate').change}
-            trend={getMetricTrend('churn_rate').trend}
-            icon={UserX}
-          />
-          <KPICard
-            title="Growth Rate"
-            value={`${getLatestMetricValue('growth_rate').toFixed(1)}%`}
-            change={getMetricTrend('growth_rate').change}
-            trend={getMetricTrend('growth_rate').trend}
-            icon={Users}
-          />
-        </div>
-
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Time to Optimized Prompt Chart */}
-          <Card className="border-electric-blue/20">
-            <CardHeader>
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* Time to Optimized Prompt - Area Chart */}
+          <Card className="border-electric-blue/20 lg:col-span-2 xl:col-span-1">
+            <CardHeader className="flex flex-row items-center gap-2">
+              <Clock className="h-5 w-5 text-electric-blue" />
               <CardTitle className="text-electric-blue">Time to Optimized Prompt</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={getChartData('time_to_optimized')}>
+                <AreaChart data={getChartData('time_to_optimized')}>
+                  <defs>
+                    <linearGradient id="timeGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--electric-blue))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--electric-blue))" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
-                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
                   <Tooltip 
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px'
                     }}
+                    formatter={(value) => [`${value}s`, 'Time']}
                   />
-                  <Line 
+                  <Area 
                     type="monotone" 
                     dataKey="value" 
                     stroke="hsl(var(--electric-blue))" 
+                    fillOpacity={1}
+                    fill="url(#timeGradient)"
                     strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--electric-blue))' }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
 
           {/* Conversion Funnel */}
           <Card className="border-electric-blue/20">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center gap-2">
+              <Target className="h-5 w-5 text-electric-blue" />
               <CardTitle className="text-electric-blue">Conversion Funnel</CardTitle>
             </CardHeader>
             <CardContent>
@@ -283,13 +296,14 @@ export default function Metrics() {
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px'
                     }}
+                    formatter={(value, name) => [value, name]}
                   />
                   <Funnel
                     dataKey="value"
-                    data={funnelData}
+                    data={getFunnelChartData()}
                     isAnimationActive
                   >
-                    {funnelData.map((entry, index) => (
+                    {getFunnelChartData().map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                   </Funnel>
@@ -298,17 +312,26 @@ export default function Metrics() {
             </CardContent>
           </Card>
 
-          {/* Retention Chart */}
-          <Card className="border-electric-blue/20">
-            <CardHeader>
-              <CardTitle className="text-electric-blue">Retention Rate</CardTitle>
+          {/* Cohort Retention Chart */}
+          <Card className="border-electric-blue/20 lg:col-span-2 xl:col-span-1">
+            <CardHeader className="flex flex-row items-center gap-2">
+              <Users className="h-5 w-5 text-electric-blue" />
+              <CardTitle className="text-electric-blue">Cohort Retention</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={getChartData('retention')}>
+                <LineChart data={getCohortChartData()}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
-                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <XAxis 
+                    dataKey="cohort" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    domain={[0, 100]}
+                  />
                   <Tooltip 
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
@@ -318,42 +341,145 @@ export default function Metrics() {
                   />
                   <Line 
                     type="monotone" 
-                    dataKey="value" 
+                    dataKey="period_1" 
+                    stroke="hsl(var(--electric-blue))" 
+                    strokeWidth={2}
+                    name="Period 1"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="period_2" 
+                    stroke="hsl(var(--electric-blue-light))" 
+                    strokeWidth={2}
+                    name="Period 2"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="period_3" 
                     stroke="hsl(var(--primary))" 
                     strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--primary))' }}
+                    name="Period 3"
                   />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          {/* Growth Chart */}
+          {/* Churn Rate - Bar Chart */}
           <Card className="border-electric-blue/20">
-            <CardHeader>
-              <CardTitle className="text-electric-blue">Growth Rate</CardTitle>
+            <CardHeader className="flex flex-row items-center gap-2">
+              <TrendingDown className="h-5 w-5 text-red-500" />
+              <CardTitle className="text-electric-blue">Churn Rate</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={getChartData('growth_rate')}>
+                <BarChart data={getChartData('churn_rate')}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
-                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
                   <Tooltip 
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px'
                     }}
+                    formatter={(value) => [`${value}%`, 'Churn Rate']}
+                  />
+                  <Bar 
+                    dataKey="value" 
+                    fill="hsl(var(--destructive))"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Growth Rate - Line Chart */}
+          <Card className="border-electric-blue/20">
+            <CardHeader className="flex flex-row items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-500" />
+              <CardTitle className="text-electric-blue">Growth Rate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={getChartData('growth_rate')}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value) => [`${value}%`, 'Growth Rate']}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="value" 
-                    stroke="hsl(var(--electric-blue-light))" 
-                    strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--electric-blue-light))' }}
+                    stroke="hsl(var(--green-500))" 
+                    strokeWidth={3}
+                    dot={{ fill: 'hsl(var(--green-500))' }}
                   />
                 </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Top Templates Usage - Horizontal Bar Chart */}
+          <Card className="border-electric-blue/20 lg:col-span-2 xl:col-span-1">
+            <CardHeader className="flex flex-row items-center gap-2">
+              <Target className="h-5 w-5 text-electric-blue" />
+              <CardTitle className="text-electric-blue">Top Templates Usage</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={getTemplateUsageData()} layout="horizontal">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    type="number" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    width={80}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value, name) => [value, 'Usage Count']}
+                  />
+                  <Bar 
+                    dataKey="usage" 
+                    radius={[0, 4, 4, 0]}
+                  >
+                    {getTemplateUsageData().map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>

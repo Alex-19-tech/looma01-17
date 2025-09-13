@@ -27,7 +27,7 @@ export function ChatInterface({ messages, onSendMessage }: ChatInterfaceProps) {
   const closeUserProfile = () => setUserProfileOpen(false);
 
   return (
-    <div className="h-screen bg-black">
+    <div className="h-screen bg-black overflow-hidden">
       {/* Mobile navbar - only show on mobile */}
       <div className="lg:hidden">
         <TopNavbar onMenuClick={toggleSidebar} onUserClick={toggleUserProfile} />
@@ -40,36 +40,40 @@ export function ChatInterface({ messages, onSendMessage }: ChatInterfaceProps) {
       
       <UserProfileDrawer isOpen={userProfileOpen} onClose={closeUserProfile} />
       
-      {/* Desktop layout */}
-      <div className="hidden lg:grid lg:grid-cols-[320px_1fr] h-full">
-        {/* Fixed desktop sidebar */}
-        <div className="h-full overflow-hidden">
+      {/* Desktop layout - Fixed height grid with no overflow */}
+      <div className="hidden lg:grid lg:grid-cols-[320px_1fr] h-screen">
+        {/* Fixed 320px sidebar - full height with internal scrolling */}
+        <div className="h-full border-r border-border">
           <ChatSidebar isOpen={true} onClose={() => {}} onUserProfileClick={toggleUserProfile} />
         </div>
         
-        {/* Chat area */}
-        <div className="flex flex-col h-full min-h-0">
-          {/* Chat messages - scrollable area */}
-          <div className="flex-1 overflow-y-auto px-4 py-4">
-            <div className="max-w-4xl mx-auto">
-              {messages.map((message) => (
-                <ChatMessage
-                  key={message.id}
-                  message={message.text}
-                  isUser={message.isUser}
-                  promptType={message.promptType}
-                />
-              ))}
+        {/* Chat area - fills remaining width and full height */}
+        <div className="h-full flex flex-col">
+          {/* Scrollable messages area */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-4 py-4">
+              <div className="max-w-4xl mx-auto">
+                {messages.map((message) => (
+                  <ChatMessage
+                    key={message.id}
+                    message={message.text}
+                    isUser={message.isUser}
+                    promptType={message.promptType}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Fixed input at bottom of chat area */}
-          <div className="border-t border-border bg-background p-4">
-            <div className="max-w-4xl mx-auto">
-              <ChatInput 
-                isLandingMode={false}
-                onSendMessage={onSendMessage}
-              />
+          {/* Pinned input bar at bottom */}
+          <div className="shrink-0 border-t border-border bg-background">
+            <div className="p-4">
+              <div className="max-w-4xl mx-auto">
+                <ChatInput 
+                  isLandingMode={false}
+                  onSendMessage={onSendMessage}
+                />
+              </div>
             </div>
           </div>
         </div>

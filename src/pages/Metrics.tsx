@@ -182,18 +182,18 @@ export default function Metrics() {
       { name: 'Bug Fixing', usage: 380, fill: 'hsl(var(--electric-blue-light))' },
       { name: 'Documentation', usage: 320, fill: 'hsl(var(--primary))' },
       { name: 'Testing', usage: 280, fill: 'hsl(var(--electric-blue-dark))' },
-      { name: 'Refactoring', usage: 240, fill: 'hsl(var(--muted))' }
+      { name: 'Refactoring', usage: 240, fill: '#64748b' }
     ];
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-white">
         <div className="animate-pulse p-8">
-          <div className="h-8 bg-muted rounded w-48 mb-8"></div>
+          <div className="h-8 bg-gray-200 rounded w-48 mb-8"></div>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-96 bg-muted rounded"></div>
+              <div key={i} className="h-96 bg-gray-200 rounded"></div>
             ))}
           </div>
         </div>
@@ -202,16 +202,16 @@ export default function Metrics() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       {/* Fixed Top Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200">
         <div className="flex items-center justify-between h-16 px-6">
           <div className="flex items-center gap-4">
             <div className="h-8 w-8 flex items-center justify-center">
               <img src="/Looma.svg" alt="Prelix" className="h-6 w-6" />
             </div>
-            <h1 className="text-xl font-bold text-foreground">Prelix</h1>
-            <div className="h-6 w-px bg-border mx-4"></div>
+            <h1 className="text-xl font-bold text-gray-900">Prelix</h1>
+            <div className="h-6 w-px bg-gray-300 mx-4"></div>
             <h2 className="text-lg font-semibold text-electric-blue">Metrics</h2>
           </div>
         </div>
@@ -223,9 +223,9 @@ export default function Metrics() {
         {alerts.length > 0 && (
           <div className="mb-8 space-y-4">
             {alerts.map((alert) => (
-              <Alert key={alert.id} className="border-amber-500/20 bg-amber-500/5">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
-                <AlertDescription className="text-amber-700">
+              <Alert key={alert.id} className="border-amber-200 bg-amber-50">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
                   {alert.alert_message || `${alert.metric_type} threshold of ${alert.threshold_value} triggered`}
                 </AlertDescription>
               </Alert>
@@ -236,7 +236,7 @@ export default function Metrics() {
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {/* Time to Optimized Prompt - Area Chart */}
-          <Card className="border-electric-blue/20 lg:col-span-2 xl:col-span-1">
+          <Card className="border-electric-blue/20 bg-white lg:col-span-2 xl:col-span-1">
             <CardHeader className="flex flex-row items-center gap-2">
               <Clock className="h-5 w-5 text-electric-blue" />
               <CardTitle className="text-electric-blue">Time to Optimized Prompt</CardTitle>
@@ -250,21 +250,22 @@ export default function Metrics() {
                       <stop offset="95%" stopColor="hsl(var(--electric-blue))" stopOpacity={0.1}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis 
                     dataKey="date" 
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="#64748b"
                     fontSize={12}
                   />
                   <YAxis 
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="#64748b"
                     fontSize={12}
                   />
                   <Tooltip 
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      backgroundColor: 'white',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      color: '#0f172a'
                     }}
                     formatter={(value) => [`${value}s`, 'Time']}
                   />
@@ -282,7 +283,7 @@ export default function Metrics() {
           </Card>
 
           {/* Conversion Funnel */}
-          <Card className="border-electric-blue/20">
+          <Card className="border-electric-blue/20 bg-white">
             <CardHeader className="flex flex-row items-center gap-2">
               <Target className="h-5 w-5 text-electric-blue" />
               <CardTitle className="text-electric-blue">Conversion Funnel</CardTitle>
@@ -292,9 +293,10 @@ export default function Metrics() {
                 <FunnelChart>
                   <Tooltip 
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      backgroundColor: 'white',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      color: '#0f172a'
                     }}
                     formatter={(value, name) => [value, name]}
                   />
@@ -313,7 +315,7 @@ export default function Metrics() {
           </Card>
 
           {/* Cohort Retention Chart */}
-          <Card className="border-electric-blue/20 lg:col-span-2 xl:col-span-1">
+          <Card className="border-electric-blue/20 bg-white lg:col-span-2 xl:col-span-1">
             <CardHeader className="flex flex-row items-center gap-2">
               <Users className="h-5 w-5 text-electric-blue" />
               <CardTitle className="text-electric-blue">Cohort Retention</CardTitle>
@@ -321,22 +323,23 @@ export default function Metrics() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={getCohortChartData()}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis 
                     dataKey="cohort" 
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="#64748b"
                     fontSize={12}
                   />
                   <YAxis 
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="#64748b"
                     fontSize={12}
                     domain={[0, 100]}
                   />
                   <Tooltip 
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      backgroundColor: 'white',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      color: '#0f172a'
                     }}
                   />
                   <Line 
@@ -366,7 +369,7 @@ export default function Metrics() {
           </Card>
 
           {/* Churn Rate - Bar Chart */}
-          <Card className="border-electric-blue/20">
+          <Card className="border-electric-blue/20 bg-white">
             <CardHeader className="flex flex-row items-center gap-2">
               <TrendingDown className="h-5 w-5 text-red-500" />
               <CardTitle className="text-electric-blue">Churn Rate</CardTitle>
@@ -374,27 +377,28 @@ export default function Metrics() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={getChartData('churn_rate')}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis 
                     dataKey="date" 
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="#64748b"
                     fontSize={12}
                   />
                   <YAxis 
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="#64748b"
                     fontSize={12}
                   />
                   <Tooltip 
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      backgroundColor: 'white',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      color: '#0f172a'
                     }}
                     formatter={(value) => [`${value}%`, 'Churn Rate']}
                   />
                   <Bar 
                     dataKey="value" 
-                    fill="hsl(var(--destructive))"
+                    fill="#ef4444"
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
@@ -403,7 +407,7 @@ export default function Metrics() {
           </Card>
 
           {/* Growth Rate - Line Chart */}
-          <Card className="border-electric-blue/20">
+          <Card className="border-electric-blue/20 bg-white">
             <CardHeader className="flex flex-row items-center gap-2">
               <TrendingUp className="h-5 w-5 text-green-500" />
               <CardTitle className="text-electric-blue">Growth Rate</CardTitle>
@@ -411,30 +415,31 @@ export default function Metrics() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={getChartData('growth_rate')}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis 
                     dataKey="date" 
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="#64748b"
                     fontSize={12}
                   />
                   <YAxis 
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="#64748b"
                     fontSize={12}
                   />
                   <Tooltip 
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      backgroundColor: 'white',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      color: '#0f172a'
                     }}
                     formatter={(value) => [`${value}%`, 'Growth Rate']}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="value" 
-                    stroke="hsl(var(--green-500))" 
+                    stroke="#22c55e" 
                     strokeWidth={3}
-                    dot={{ fill: 'hsl(var(--green-500))' }}
+                    dot={{ fill: '#22c55e' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -442,7 +447,7 @@ export default function Metrics() {
           </Card>
 
           {/* Top Templates Usage - Horizontal Bar Chart */}
-          <Card className="border-electric-blue/20 lg:col-span-2 xl:col-span-1">
+          <Card className="border-electric-blue/20 bg-white lg:col-span-2 xl:col-span-1">
             <CardHeader className="flex flex-row items-center gap-2">
               <Target className="h-5 w-5 text-electric-blue" />
               <CardTitle className="text-electric-blue">Top Templates Usage</CardTitle>
@@ -450,24 +455,25 @@ export default function Metrics() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={getTemplateUsageData()} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis 
                     type="number" 
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="#64748b"
                     fontSize={12}
                   />
                   <YAxis 
                     type="category" 
                     dataKey="name" 
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="#64748b"
                     fontSize={12}
                     width={80}
                   />
                   <Tooltip 
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      backgroundColor: 'white',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      color: '#0f172a'
                     }}
                     formatter={(value, name) => [value, 'Usage Count']}
                   />

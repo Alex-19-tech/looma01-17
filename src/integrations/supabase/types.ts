@@ -152,6 +152,69 @@ export type Database = {
         }
         Relationships: []
       }
+      cohort_retention: {
+        Row: {
+          cohort_month: string
+          created_at: string
+          id: string
+          period_number: number
+          retention_rate: number | null
+          user_id: string
+          users_count: number
+        }
+        Insert: {
+          cohort_month: string
+          created_at?: string
+          id?: string
+          period_number: number
+          retention_rate?: number | null
+          user_id: string
+          users_count?: number
+        }
+        Update: {
+          cohort_month?: string
+          created_at?: string
+          id?: string
+          period_number?: number
+          retention_rate?: number | null
+          user_id?: string
+          users_count?: number
+        }
+        Relationships: []
+      }
+      conversion_funnels: {
+        Row: {
+          conversion_rate: number | null
+          created_at: string
+          id: string
+          stage: string
+          stage_order: number
+          timestamp: string
+          user_id: string
+          users_count: number
+        }
+        Insert: {
+          conversion_rate?: number | null
+          created_at?: string
+          id?: string
+          stage: string
+          stage_order: number
+          timestamp?: string
+          user_id: string
+          users_count?: number
+        }
+        Update: {
+          conversion_rate?: number | null
+          created_at?: string
+          id?: string
+          stage?: string
+          stage_order?: number
+          timestamp?: string
+          user_id?: string
+          users_count?: number
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -179,6 +242,72 @@ export type Database = {
           prompt_type?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      metric_alerts: {
+        Row: {
+          alert_message: string | null
+          comparison_operator: string
+          created_at: string
+          id: string
+          is_active: boolean
+          metric_type: string
+          threshold_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_message?: string | null
+          comparison_operator?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metric_type: string
+          threshold_value: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_message?: string | null
+          comparison_operator?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metric_type?: string
+          threshold_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      metrics: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          metric_type: string
+          timestamp: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          timestamp?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          timestamp?: string
+          user_id?: string
+          value?: number
         }
         Relationships: []
       }

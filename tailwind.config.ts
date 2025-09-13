@@ -67,6 +67,12 @@ export default {
 				'brand-primary': {
 					DEFAULT: 'hsl(var(--brand-primary))',
 					foreground: 'hsl(var(--brand-primary-foreground))'
+				},
+				'electric-blue': {
+					DEFAULT: 'hsl(var(--electric-blue))',
+					foreground: 'hsl(var(--electric-blue-foreground))',
+					light: 'hsl(var(--electric-blue-light))',
+					dark: 'hsl(var(--electric-blue-dark))'
 				}
 			},
 			backgroundImage: {

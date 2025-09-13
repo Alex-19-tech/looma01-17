@@ -18,6 +18,7 @@ import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import ModelDetails from "./pages/ModelDetails";
+import Metrics from "./pages/Metrics";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,11 @@ const App = () => (
             <Route path="/models/:modelId" element={
               <ProtectedRoute>
                 <ModelDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/metrics" element={
+              <ProtectedRoute>
+                <Metrics />
               </ProtectedRoute>
             } />
             

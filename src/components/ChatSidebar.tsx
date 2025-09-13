@@ -150,7 +150,7 @@ export function ChatSidebar({ isOpen, onClose, onUserProfileClick }: ChatSidebar
         "fixed left-0 top-0 h-full w-80 bg-background border-r border-border z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-auto",
         isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full min-h-0 overflow-hidden">
           {/* Fixed Top Section - Logo & Header */}
           <div className="flex-shrink-0">
             {/* Logo */}

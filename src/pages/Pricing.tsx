@@ -61,37 +61,45 @@ const Pricing = () => {
           </p>
         </div>
 
-        {/* Free Tier */}
-        <div className="mb-12">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-semibold text-white/80 mb-2">Basic</h2>
-            <h3 className="text-6xl font-bold mb-4">Free</h3>
-            <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
-              Current Plan
-            </Badge>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
-            {[
-              "Limited daily prompts",
-              "Basic optimization",
-              "Single model access",
-              "Standard response time",
-              "Community support",
-              "Basic dashboard"
-            ].map((feature, index) => (
-              <div key={index} className="flex items-center gap-3 text-white/70">
-                <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                <span>{feature}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Pricing Cards - Professional Layout */}
         <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-8 mb-16 max-w-7xl mx-auto">
+          {/* Free Tier */}
+          <Card className="bg-white/5 border-white/10 h-full">
+            <CardHeader className="text-center pt-12 pb-6">
+              <CardTitle className="text-2xl text-white mb-4">Free</CardTitle>
+              <div className="flex items-baseline justify-center gap-2 mb-2">
+                <span className="text-4xl font-bold text-white">$0</span>
+                <span className="text-lg text-white/60">/month</span>
+              </div>
+              <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
+                Current Plan
+              </Badge>
+              <p className="text-white/60 text-sm mt-2">Get started for free</p>
+            </CardHeader>
+            <CardContent className="px-6">
+              <div className="space-y-3 mb-6">
+                {[
+                  "Limited daily prompts",
+                  "Basic optimization", 
+                  "Single model access",
+                  "Standard response time",
+                  "Community support",
+                  "Basic dashboard"
+                ].map((feature, index) => (
+                  <div key={index} className="flex items-center gap-3 text-white/60">
+                    <Check className="h-4 w-4 flex-shrink-0" />
+                    <span className="text-sm">{feature}</span>
+                  </div>
+                ))}
+              </div>
+              <Button disabled className="w-full bg-white/10 text-white/60 py-3 rounded-xl">
+                Current Plan
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Pro Access Tier - Featured */}
-          <div className="lg:col-start-2 relative">
+          <div className="relative">
             <Card className="bg-gradient-to-br from-white/10 to-white/5 border-white/30 relative overflow-hidden h-full transform scale-105 shadow-2xl">
               <div className="absolute top-6 left-1/2 -translate-x-1/2">
                 <Badge className="bg-gradient-to-r from-primary to-accent text-primary-foreground px-4 py-1 text-sm font-semibold">

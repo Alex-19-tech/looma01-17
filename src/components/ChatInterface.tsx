@@ -41,14 +41,14 @@ export function ChatInterface({ messages, onSendMessage }: ChatInterfaceProps) {
       <UserProfileDrawer isOpen={userProfileOpen} onClose={closeUserProfile} />
       
       {/* Desktop layout */}
-      <div className="hidden lg:grid lg:grid-cols-[320px_1fr] h-screen">
+      <div className="hidden lg:grid lg:grid-cols-[320px_1fr] h-full">
         {/* Fixed desktop sidebar */}
-        <div className="h-screen overflow-hidden">
+        <div className="h-full overflow-hidden">
           <ChatSidebar isOpen={true} onClose={() => {}} onUserProfileClick={toggleUserProfile} />
         </div>
         
         {/* Chat area */}
-        <div className="flex flex-col h-screen">
+        <div className="flex flex-col h-full min-h-0">
           {/* Chat messages - scrollable area */}
           <div className="flex-1 overflow-y-auto px-4 py-4">
             <div className="max-w-4xl mx-auto">

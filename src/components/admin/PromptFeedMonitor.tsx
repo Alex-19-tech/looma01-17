@@ -54,8 +54,8 @@ export const PromptFeedMonitor = forwardRef<{ refreshFeeds: () => void }>(functi
   const fetchFeeds = async () => {
     try {
       console.log('Fetching prompt feeds...');
-      const { data: feedsData, error: feedsError } = await supabase
-        .from('prompt_feeds')
+      const { data: feedsData, error: feedsError } = await (supabase
+        .from('prompt_feeds') as any)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -66,8 +66,8 @@ export const PromptFeedMonitor = forwardRef<{ refreshFeeds: () => void }>(functi
 
       // Fetch admin profiles separately
       const adminIds = [...new Set(feedsData?.map(feed => feed.admin_id) || [])];
-      const { data: profilesData } = await supabase
-        .from('profiles')
+      const { data: profilesData } = await (supabase
+        .from('profiles') as any)
         .select('id, full_name')
         .in('id', adminIds);
 
@@ -101,8 +101,8 @@ export const PromptFeedMonitor = forwardRef<{ refreshFeeds: () => void }>(functi
 
   const handleStatusChange = async (feedId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('prompt_feeds')
+      const { error } = await (supabase
+        .from('prompt_feeds') as any)
         .update({ status: newStatus })
         .eq('id', feedId);
 
@@ -110,13 +110,13 @@ export const PromptFeedMonitor = forwardRef<{ refreshFeeds: () => void }>(functi
 
       // If activating, also activate the templates
       if (newStatus === 'active') {
-        await supabase
-          .from('prompt_templates')
+        await (supabase
+          .from('prompt_templates') as any)
           .update({ is_active: true })
           .eq('feed_id', feedId);
       } else {
-        await supabase
-          .from('prompt_templates')
+        await (supabase
+          .from('prompt_templates') as any)
           .update({ is_active: false })
           .eq('feed_id', feedId);
       }
@@ -142,8 +142,8 @@ export const PromptFeedMonitor = forwardRef<{ refreshFeeds: () => void }>(functi
     }
 
     try {
-      const { error } = await supabase
-        .from('prompt_feeds')
+      const { error } = await (supabase
+        .from('prompt_feeds') as any)
         .delete()
         .eq('id', feedId);
 

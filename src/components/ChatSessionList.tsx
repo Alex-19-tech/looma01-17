@@ -30,13 +30,13 @@ export function ChatSessionList({ onSelectSession, onCreateNew, selectedSessionI
 
   const loadSessions = async () => {
     try {
-      const { data, error } = await supabase
-        .from('chat_sessions')
+      const { data, error } = await (supabase
+        .from('chat_sessions') as any)
         .select('*')
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      setSessions(data || []);
+      setSessions((data || []) as unknown as ChatSession[]);
     } catch (error) {
       console.error('Error loading sessions:', error);
       toast({
@@ -53,8 +53,8 @@ export function ChatSessionList({ onSelectSession, onCreateNew, selectedSessionI
     e.stopPropagation();
     
     try {
-      const { error } = await supabase
-        .from('chat_sessions')
+      const { error } = await (supabase
+        .from('chat_sessions') as any)
         .delete()
         .eq('id', sessionId);
 

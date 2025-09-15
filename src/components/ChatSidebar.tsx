@@ -52,14 +52,14 @@ export function ChatSidebar({ isOpen, onClose, onUserProfileClick }: ChatSidebar
   const loadChatSessions = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('chat_sessions')
+      const { data, error } = await (supabase
+        .from('chat_sessions') as any)
         .select('*')
         .order('updated_at', { ascending: false })
         .limit(20);
 
       if (error) throw error;
-      setChatSessions(data || []);
+      setChatSessions((data || []) as unknown as ChatSession[]);
     } catch (error) {
       console.error('Error loading chat sessions:', error);
       toast({
@@ -92,8 +92,8 @@ export function ChatSidebar({ isOpen, onClose, onUserProfileClick }: ChatSidebar
     if (e) e.stopPropagation();
     
     try {
-      const { error } = await supabase
-        .from('chat_sessions')
+      const { error } = await (supabase
+        .from('chat_sessions') as any)
         .delete()
         .eq('id', sessionId);
 

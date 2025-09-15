@@ -29,14 +29,14 @@ export function AIWorkflowIntegrator({ onProcessComplete, className }: AIWorkflo
   const { data: models = [] } = useQuery({
     queryKey: ["ai-models"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ai_models')
+      const { data, error } = await (supabase
+        .from('ai_models') as any)
         .select('*')
         .eq('is_active', true)
         .order('priority', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as any;
     }
   });
   

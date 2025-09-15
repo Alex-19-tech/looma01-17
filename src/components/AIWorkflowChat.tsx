@@ -290,8 +290,8 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
       await loadMessages(sessionData.chatSessionId, { maskLatestAI: true });
       
       // Start streaming animation for the latest AI message
-      const latestMessages = await supabase
-        .from('chat_messages')
+      const latestMessages = await (supabase
+        .from('chat_messages') as any)
         .select('*')
         .eq('chat_session_id', sessionData.chatSessionId)
         .order('created_at', { ascending: false })
@@ -317,14 +317,14 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
 
   const loadMessages = async (sessionId: string, options?: { maskLatestAI?: boolean }) => {
     try {
-      const { data, error } = await supabase
-        .from('chat_messages')
+      const { data, error } = await (supabase
+        .from('chat_messages') as any)
         .select('*')
         .eq('chat_session_id', sessionId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      const rawMessages = data || [];
+      const rawMessages = (data || []) as any[];
       
       // Transform messages to show user-friendly content
       let transformedMessages = rawMessages.map(msg => {
@@ -410,8 +410,8 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
     setIsLoading(true);
     try {
       // Store user confirmation
-      await supabase
-        .from('chat_messages')
+      await (supabase
+        .from('chat_messages') as any)
         .insert({
           chat_session_id: chatSessionId,
           user_id: (await supabase.auth.getUser()).data.user?.id,
@@ -589,8 +589,8 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
     
     try {
       // Add clarification message to current session
-      await supabase
-        .from('chat_messages')
+      await (supabase
+        .from('chat_messages') as any)
         .insert({
           chat_session_id: chatSessionId,
           user_id: (await supabase.auth.getUser()).data.user?.id,
@@ -657,8 +657,8 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
     
     try {
       // Add user message to current session
-      await supabase
-        .from('chat_messages')
+      await (supabase
+        .from('chat_messages') as any)
         .insert({
           chat_session_id: chatSessionId,
           user_id: (await supabase.auth.getUser()).data.user?.id,
@@ -814,8 +814,8 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
     
     try {
       // Add user message to current session
-      await supabase
-        .from('chat_messages')
+      await (supabase
+        .from('chat_messages') as any)
         .insert({
           chat_session_id: chatSessionId,
           user_id: (await supabase.auth.getUser()).data.user?.id,
@@ -867,8 +867,8 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
   const getLastAIMessage = async () => {
     if (!chatSessionId) return null;
     try {
-      const { data, error } = await supabase
-        .from('chat_messages')
+      const { data, error } = await (supabase
+        .from('chat_messages') as any)
         .select('*')
         .eq('chat_session_id', chatSessionId)
         .in('message_type', ['ai_understanding', 'ai_response'])

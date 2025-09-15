@@ -43,8 +43,8 @@ export function TemplateManagerModal({ open, onOpenChange, selectedType }: Templ
     queryKey: ["type-templates", selectedType.id],
     queryFn: async () => {
       console.log('🔍 Fetching templates for type_id:', selectedType.id);
-      const { data, error } = await supabase
-        .from('type_templates')
+      const { data, error } = await (supabase
+        .from('type_templates') as any)
         .select('*')
         .eq('type_id', selectedType.id)
         .order('created_at', { ascending: false });

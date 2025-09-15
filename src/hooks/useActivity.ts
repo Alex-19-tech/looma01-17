@@ -28,8 +28,8 @@ export function useActivity() {
   const fetchActivities = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('user_inputs')
+      const { data, error } = await (supabase
+        .from('user_inputs') as any)
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false })

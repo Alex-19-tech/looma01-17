@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `https://prelix.top/`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithOAuth = async (provider: 'google' | 'facebook' | 'apple') => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `https://prelix.top/`;
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
@@ -105,7 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const trackUserSession = async (userId: string) => {
     try {
-      await supabase.from('sessions').insert({
+      await (supabase
+        .from('sessions') as any)
+        .insert({
         user_id: userId,
         ip_address: null,
         user_agent: navigator.userAgent,
@@ -117,8 +119,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateLastLogin = async (userId: string) => {
     try {
-      await supabase
-        .from('profiles')
+      await (supabase
+        .from('profiles') as any)
         .update({ last_login: new Date().toISOString() })
         .eq('id', userId);
     } catch (error) {
@@ -129,8 +131,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const trackUserLogout = async (userId: string) => {
     try {
       // Update the most recent session with logout time
-      const { data: sessions } = await supabase
-        .from('sessions')
+      const { data: sessions } = await (supabase
+        .from('sessions') as any)
         .select('id')
         .eq('user_id', userId)
         .is('logout_at', null)
@@ -138,8 +140,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .limit(1);
 
       if (sessions && sessions.length > 0) {
-        await supabase
-          .from('sessions')
+        await (supabase
+          .from('sessions') as any)
           .update({ logout_at: new Date().toISOString() })
           .eq('id', sessions[0].id);
       }

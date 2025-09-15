@@ -71,8 +71,8 @@ export function DataFeedModal({ open, onOpenChange, selectedType }: DataFeedModa
         console.error('AI processing error:', aiError);
         console.log('Falling back to direct template insertion');
         // Fallback to direct storage if AI fails
-        const { error: directError } = await supabase
-          .from('type_templates')
+        const { error: directError } = await (supabase
+          .from('type_templates') as any)
           .insert({
             type_id: selectedType.id,
             template_text: rawText.trim(),

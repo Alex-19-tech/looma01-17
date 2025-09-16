@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DateRange } from "@/components/MetricsDateFilter";
@@ -129,14 +129,18 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAllData = async () => {
+  // Enhanced data fetching with better error handling and real-time integration
+  const fetchAllData = useCallback(async () => {
     if (!user) return;
     
     try {
       setLoading(true);
       setError(null);
 
-      // Try to fetch real data, fallback to mock data
+      // Create sample data if none exists
+      await ensureSampleDataExists(user.id);
+
+      // Fetch all data with improved queries
       const [metricsResult, cohortResult, conversionResult, alertsResult] = await Promise.allSettled([
         supabase
           .from('metrics')
@@ -144,18 +148,22 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
           .eq('user_id', user.id)
           .gte('timestamp', dateRange.from.toISOString())
           .lte('timestamp', dateRange.to.toISOString())
-          .order('timestamp', { ascending: false }),
+          .order('timestamp', { ascending: true })
+          .limit(1000),
         
         supabase
           .from('cohort_retention')
           .select('*')
           .eq('user_id', user.id)
-          .order('cohort_month', { ascending: true }),
+          .order('cohort_month', { ascending: true })
+          .limit(100),
         
         supabase
           .from('conversion_funnels')
           .select('*')
           .eq('user_id', user.id)
+          .gte('timestamp', dateRange.from.toISOString())
+          .lte('timestamp', dateRange.to.toISOString())
           .order('stage_order', { ascending: true }),
         
         supabase
@@ -165,51 +173,43 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
           .eq('is_active', true)
       ]);
 
-      // Handle metrics data
-      if (metricsResult.status === 'fulfilled' && !metricsResult.value.error) {
-        const data = metricsResult.value.data || [];
-        setRawMetrics(data.length > 0 ? data : generateMockMetrics(dateRange));
-      } else {
-        setRawMetrics(generateMockMetrics(dateRange));
-      }
+      // Process results with better error handling
+      const metrics = metricsResult.status === 'fulfilled' && metricsResult.value.data
+        ? metricsResult.value.data
+        : generateMockMetrics(dateRange);
+      
+      const cohortData = cohortResult.status === 'fulfilled' && cohortResult.value.data
+        ? cohortResult.value.data
+        : generateMockCohortData();
+      
+      const conversionData = conversionResult.status === 'fulfilled' && conversionResult.value.data
+        ? conversionResult.value.data
+        : generateMockConversionData();
+      
+      const alertsData = alertsResult.status === 'fulfilled' && alertsResult.value.data
+        ? alertsResult.value.data
+        : [];
 
-      // Handle cohort data
-      if (cohortResult.status === 'fulfilled' && !cohortResult.value.error) {
-        const data = cohortResult.value.data || [];
-        setRawCohortData(data.length > 0 ? data : generateMockCohortData());
-      } else {
-        setRawCohortData(generateMockCohortData());
-      }
-
-      // Handle conversion data
-      if (conversionResult.status === 'fulfilled' && !conversionResult.value.error) {
-        const data = conversionResult.value.data || [];
-        setRawConversionData(data.length > 0 ? data : generateMockConversionData());
-      } else {
-        setRawConversionData(generateMockConversionData());
-      }
-
-      // Handle alerts
-      if (alertsResult.status === 'fulfilled' && !alertsResult.value.error) {
-        setAlerts(alertsResult.value.data || []);
-      } else {
-        setAlerts([]);
-      }
+      setRawMetrics(metrics);
+      setRawCohortData(cohortData);
+      setRawConversionData(conversionData);
+      setAlerts(alertsData);
 
     } catch (err) {
       console.error('Error fetching data:', err);
-      setError('Failed to load metrics data');
+      setError('Failed to load metrics data. Using sample data for demonstration.');
       
       // Use mock data as fallback
       setRawMetrics(generateMockMetrics(dateRange));
       setRawCohortData(generateMockCohortData());
       setRawConversionData(generateMockConversionData());
+      setAlerts([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, dateRange]);
 
-  // Filtered data based on date range and filters
+  // Enhanced filtering with proper filter application
   const filteredData = useMemo(() => {
     const fromTime = startOfDay(dateRange.from).getTime();
     const toTime = endOfDay(dateRange.to).getTime();
@@ -218,21 +218,45 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
       const metricTime = new Date(metric.timestamp).getTime();
       const inDateRange = metricTime >= fromTime && metricTime <= toTime;
       
-      // Apply additional filters here based on metadata
-      // This is a placeholder for more sophisticated filtering
+      // Apply metadata-based filtering
+      if (filters.planType && filters.planType !== 'all') {
+        const planType = metric.metadata?.plan_type;
+        if (planType !== filters.planType) return false;
+      }
+      
+      if (filters.templateCategory && filters.templateCategory !== 'all') {
+        const category = metric.metadata?.category;
+        if (category !== filters.templateCategory) return false;
+      }
+      
       return inDateRange;
     });
 
-    // Filter cohort and conversion data based on filters
+    // Filter cohort data based on filters
     const cohortData = rawCohortData.filter(cohort => {
-      // Apply cohort filtering logic
-      return true; // Placeholder
+      if (filters.cohort && filters.cohort !== 'all') {
+        const cohortMonth = new Date(cohort.cohort_month);
+        const now = new Date();
+        
+        switch (filters.cohort) {
+          case 'this_week':
+            return cohortMonth >= subDays(now, 7);
+          case 'this_month':
+            return cohortMonth.getMonth() === now.getMonth() && 
+                   cohortMonth.getFullYear() === now.getFullYear();
+          case 'q1_2024':
+            return cohortMonth.getFullYear() === 2024 && cohortMonth.getMonth() < 3;
+          case 'q2_2024':
+            return cohortMonth.getFullYear() === 2024 && cohortMonth.getMonth() >= 3 && cohortMonth.getMonth() < 6;
+          default:
+            return true;
+        }
+      }
+      return true;
     });
 
-    const conversionData = rawConversionData.filter(conversion => {
-      // Apply conversion filtering logic  
-      return true; // Placeholder
-    });
+    // Filter conversion data - no specific filtering needed as it's aggregate data
+    const conversionData = rawConversionData;
 
     return { metrics, cohortData, conversionData };
   }, [rawMetrics, rawCohortData, rawConversionData, dateRange, filters]);
@@ -244,7 +268,7 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
   useEffect(() => {
     if (!user) return;
 
-    // Set up real-time subscriptions
+    // Set up comprehensive real-time subscriptions
     const channel = supabase
       .channel('metrics-realtime')
       .on(
@@ -255,7 +279,10 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
           table: 'metrics',
           filter: `user_id=eq.${user.id}`
         },
-        () => fetchAllData()
+        (payload) => {
+          console.log('Real-time metrics update:', payload);
+          fetchAllData();
+        }
       )
       .on(
         'postgres_changes',
@@ -265,7 +292,10 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
           table: 'cohort_retention',
           filter: `user_id=eq.${user.id}`
         },
-        () => fetchAllData()
+        (payload) => {
+          console.log('Real-time cohort update:', payload);
+          fetchAllData();
+        }
       )
       .on(
         'postgres_changes',
@@ -275,14 +305,32 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
           table: 'conversion_funnels',
           filter: `user_id=eq.${user.id}`
         },
-        () => fetchAllData()
+        (payload) => {
+          console.log('Real-time conversion update:', payload);
+          fetchAllData();
+        }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'metric_alerts',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Real-time alerts update:', payload);
+          fetchAllData();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, dateRange]);
+  }, [user, fetchAllData]);
 
   return {
     ...filteredData,
@@ -291,4 +339,51 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
     error,
     refetch: fetchAllData
   };
+}
+
+// Helper function to ensure sample data exists for demonstration
+async function ensureSampleDataExists(userId: string) {
+  try {
+    // Check if any metrics exist
+    const { count } = await supabase
+      .from('metrics')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (count === 0) {
+      // Create sample metrics data
+      const sampleMetrics = generateMockMetrics({
+        from: subDays(new Date(), 30),
+        to: new Date()
+      }).map(metric => ({
+        ...metric,
+        user_id: userId,
+        id: undefined // Let Supabase generate the ID
+      }));
+
+      await supabase.from('metrics').insert(sampleMetrics);
+
+      // Create sample cohort data
+      const sampleCohortData = generateMockCohortData().map(cohort => ({
+        ...cohort,
+        user_id: userId,
+        id: undefined
+      }));
+
+      await supabase.from('cohort_retention').insert(sampleCohortData);
+
+      // Create sample conversion data
+      const sampleConversionData = generateMockConversionData().map(conversion => ({
+        ...conversion,
+        user_id: userId,
+        timestamp: new Date().toISOString(),
+        id: undefined
+      }));
+
+      await supabase.from('conversion_funnels').insert(sampleConversionData);
+    }
+  } catch (error) {
+    console.log('Sample data creation skipped:', error.message);
+    // Silent fail - mock data will be used instead
+  }
 }

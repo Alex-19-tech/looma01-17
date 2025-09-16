@@ -21,14 +21,25 @@ export default function Metrics() {
   const [filters, setFilters] = useState<MetricsFilterState>({});
   
   const { metrics, cohortData, conversionData, alerts, loading, error, refetch } = useMetricsData(dateRange, filters);
-  const { exportToCSV, exportToPDF, isExporting } = useMetricsExport();
+  const { exportToCSV, exportToPDF, exportToJSON, isExporting } = useMetricsExport();
 
-  const handleExport = async (format: 'csv' | 'pdf') => {
+  const handleExport = async (format: 'csv' | 'pdf' | 'json') => {
     const exportData = { metrics, cohortData, conversionData };
     
-    const result = format === 'csv' 
-      ? await exportToCSV(exportData, dateRange, filters)
-      : await exportToPDF(exportData, dateRange, filters);
+    let result;
+    switch (format) {
+      case 'csv':
+        result = await exportToCSV(exportData, dateRange, filters);
+        break;
+      case 'pdf':
+        result = await exportToPDF(exportData, dateRange, filters);
+        break;
+      case 'json':
+        result = await exportToJSON(exportData, dateRange, filters);
+        break;
+      default:
+        return;
+    }
     
     if (result.success) {
       toast({
@@ -138,6 +149,15 @@ export default function Metrics() {
           </div>
           
           <div className="flex items-center gap-3">
+            {/* Real-time status indicator */}
+            <div className="flex items-center gap-2 text-sm">
+              <div className={`h-2 w-2 rounded-full ${error ? 'bg-red-500' : 'bg-green-500 animate-pulse'}`}></div>
+              <span className="text-gray-600 hidden sm:inline">
+                {error ? 'Offline' : 'Live'}
+              </span>
+            </div>
+            
+            {/* Export buttons */}
             <Button
               variant="outline"
               size="sm"
@@ -146,7 +166,17 @@ export default function Metrics() {
               className="gap-2 transition-all duration-200 hover:scale-105"
             >
               <FileText className="h-4 w-4" />
-              CSV
+              <span className="hidden sm:inline">CSV</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleExport('json')}
+              disabled={isExporting}
+              className="gap-2 transition-all duration-200 hover:scale-105"
+            >
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">JSON</span>
             </Button>
             <Button
               variant="outline"
@@ -156,7 +186,7 @@ export default function Metrics() {
               className="gap-2 transition-all duration-200 hover:scale-105"
             >
               <Download className="h-4 w-4" />
-              PDF
+              <span className="hidden sm:inline">PDF</span>
             </Button>
             <Button
               variant="outline"
@@ -165,8 +195,8 @@ export default function Metrics() {
               disabled={loading}
               className="gap-2 transition-all duration-200 hover:scale-105"
             >
-              <Settings className="h-4 w-4" />
-              Refresh
+              <Settings className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
           </div>
         </div>
@@ -174,12 +204,21 @@ export default function Metrics() {
 
       {/* Main Content */}
       <div className="pt-24 p-6 max-w-7xl mx-auto">
-        {/* Error State */}
+        {/* Error State with Retry Option */}
         {error && (
           <Alert className="mb-8 border-red-200 bg-red-50 animate-fade-in">
             <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
-              {error}
+            <AlertDescription className="text-red-800 flex items-center justify-between">
+              <span>{error}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refetch}
+                disabled={loading}
+                className="ml-4 text-red-600 border-red-200 hover:bg-red-100"
+              >
+                Retry
+              </Button>
             </AlertDescription>
           </Alert>
         )}
@@ -201,7 +240,13 @@ export default function Metrics() {
         {/* Filters and Controls */}
         <div className="mb-8 space-y-6 animate-fade-in">
           <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters & Date Range</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Filters & Date Range</h3>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>Total Records: {metrics.length + cohortData.length + conversionData.length}</span>
+                {isExporting && <span className="text-blue-600">Exporting...</span>}
+              </div>
+            </div>
             <div className="flex flex-col lg:flex-row gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>

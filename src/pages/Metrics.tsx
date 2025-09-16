@@ -1,141 +1,48 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, FunnelChart, Funnel, Cell, AreaChart, Area, BarChart, Bar } from "recharts";
-import { AlertTriangle, Clock, Users, TrendingUp, TrendingDown, Target } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-
-interface MetricData {
-  id: string;
-  metric_type: string;
-  value: number;
-  timestamp: string;
-  metadata: any;
-}
-
-interface CohortData {
-  cohort_month: string;
-  period_number: number;
-  retention_rate: number;
-  users_count: number;
-}
-
-interface ConversionData {
-  stage: string;
-  users_count: number;
-  conversion_rate: number;
-  stage_order: number;
-}
-
-interface Alert {
-  id: string;
-  metric_type: string;
-  alert_message: string;
-  threshold_value: number;
-}
+import { AlertTriangle, Clock, Users, TrendingUp, TrendingDown, Target, Download, FileText, Settings } from "lucide-react";
+import { subDays } from "date-fns";
+import MetricsDateFilter, { DateRange } from "@/components/MetricsDateFilter";
+import MetricsFilters, { MetricsFilterState } from "@/components/MetricsFilters";
+import { useMetricsData } from "@/hooks/useMetricsData";
+import { useMetricsExport } from "@/hooks/useMetricsExport";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Metrics() {
-  const { user } = useAuth();
-  const [metrics, setMetrics] = useState<MetricData[]>([]);
-  const [cohortData, setCohortData] = useState<CohortData[]>([]);
-  const [conversionData, setConversionData] = useState<ConversionData[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: subDays(new Date(), 30),
+    to: new Date()
+  });
+  const [filters, setFilters] = useState<MetricsFilterState>({});
+  
+  const { metrics, cohortData, conversionData, alerts, loading, error, refetch } = useMetricsData(dateRange, filters);
+  const { exportToCSV, exportToPDF, isExporting } = useMetricsExport();
 
-  const fetchAllData = async () => {
-    if (!user) return;
+  const handleExport = async (format: 'csv' | 'pdf') => {
+    const exportData = { metrics, cohortData, conversionData };
     
-    try {
-      // Fetch metrics
-      const { data: metricsData, error: metricsError } = await supabase
-        .from('metrics')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('timestamp', { ascending: false })
-        .limit(100);
-
-      if (metricsError) throw metricsError;
-      setMetrics(metricsData || []);
-
-      // Fetch cohort retention data
-      const { data: cohortRetentionData, error: cohortError } = await supabase
-        .from('cohort_retention')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('cohort_month', { ascending: true });
-
-      if (cohortError) throw cohortError;
-      setCohortData(cohortRetentionData || []);
-
-      // Fetch conversion funnel data
-      const { data: funnelData, error: funnelError } = await supabase
-        .from('conversion_funnels')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('stage_order', { ascending: true });
-
-      if (funnelError) throw funnelError;
-      setConversionData(funnelData || []);
-
-      // Fetch alerts
-      const { data: alertsData, error: alertsError } = await supabase
-        .from('metric_alerts')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true);
-
-      if (alertsError) throw alertsError;
-      setAlerts(alertsData || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
+    const result = format === 'csv' 
+      ? await exportToCSV(exportData, dateRange, filters)
+      : await exportToPDF(exportData, dateRange, filters);
+    
+    if (result.success) {
+      toast({
+        title: "Export Successful",
+        description: `Metrics data exported as ${format.toUpperCase()}`,
+      });
+    } else {
+      toast({
+        title: "Export Failed", 
+        description: result.error || "Failed to export data",
+        variant: "destructive",
+      });
     }
   };
-
-  useEffect(() => {
-    fetchAllData();
-
-    // Set up real-time subscriptions for all tables
-    const metricsChannel = supabase
-      .channel('metrics-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'metrics',
-          filter: `user_id=eq.${user?.id}`
-        },
-        () => fetchAllData()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'cohort_retention',
-          filter: `user_id=eq.${user?.id}`
-        },
-        () => fetchAllData()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'conversion_funnels',
-          filter: `user_id=eq.${user?.id}`
-        },
-        () => fetchAllData()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(metricsChannel);
-    };
-  }, [user]);
 
   const getChartData = (type: string) => {
     return metrics
@@ -189,11 +96,26 @@ export default function Metrics() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <div className="animate-pulse p-8">
-          <div className="h-8 bg-gray-200 rounded w-48 mb-8"></div>
+        <div className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200">
+          <div className="flex items-center justify-between h-16 px-6">
+            <div className="flex items-center gap-4">
+              <div className="h-8 w-8 flex items-center justify-center">
+                <img src="/Looma.svg" alt="Preflix" className="h-6 w-6" />
+              </div>
+              <h1 className="text-xl font-bold text-gray-900">Preflix</h1>
+              <div className="h-6 w-px bg-gray-300 mx-4"></div>
+              <h2 className="text-lg font-semibold text-electric-blue">Metrics</h2>
+            </div>
+          </div>
+        </div>
+        <div className="pt-24 p-6 max-w-7xl mx-auto">
+          <div className="mb-8 space-y-4">
+            <Skeleton className="h-10 w-80" />
+            <Skeleton className="h-10 w-full max-w-2xl" />
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-96 bg-gray-200 rounded"></div>
+              <Skeleton key={i} className="h-96" />
             ))}
           </div>
         </div>
@@ -208,20 +130,63 @@ export default function Metrics() {
         <div className="flex items-center justify-between h-16 px-6">
           <div className="flex items-center gap-4">
             <div className="h-8 w-8 flex items-center justify-center">
-              <img src="/Looma.svg" alt="Prelix" className="h-6 w-6" />
+              <img src="/Looma.svg" alt="Preflix" className="h-6 w-6" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">Prelix</h1>
+            <h1 className="text-xl font-bold text-gray-900">Preflix</h1>
             <div className="h-6 w-px bg-gray-300 mx-4"></div>
             <h2 className="text-lg font-semibold text-electric-blue">Metrics</h2>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleExport('csv')}
+              disabled={isExporting}
+              className="gap-2 transition-all duration-200 hover:scale-105"
+            >
+              <FileText className="h-4 w-4" />
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleExport('pdf')}
+              disabled={isExporting}
+              className="gap-2 transition-all duration-200 hover:scale-105"
+            >
+              <Download className="h-4 w-4" />
+              PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refetch}
+              disabled={loading}
+              className="gap-2 transition-all duration-200 hover:scale-105"
+            >
+              <Settings className="h-4 w-4" />
+              Refresh
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="pt-24 p-6 max-w-7xl mx-auto">
+        {/* Error State */}
+        {error && (
+          <Alert className="mb-8 border-red-200 bg-red-50 animate-fade-in">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Alerts */}
         {alerts.length > 0 && (
-          <div className="mb-8 space-y-4">
+          <div className="mb-8 space-y-4 animate-fade-in">
             {alerts.map((alert) => (
               <Alert key={alert.id} className="border-amber-200 bg-amber-50">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -233,10 +198,33 @@ export default function Metrics() {
           </div>
         )}
 
+        {/* Filters and Controls */}
+        <div className="mb-8 space-y-6 animate-fade-in">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters & Date Range</h3>
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                <MetricsDateFilter 
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Additional Filters</label>
+                <MetricsFilters 
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {/* Time to Optimized Prompt - Area Chart */}
-          <Card className="border-electric-blue/20 bg-white lg:col-span-2 xl:col-span-1">
+          <Card className="border-electric-blue/20 bg-white lg:col-span-2 xl:col-span-1 hover:shadow-lg transition-all duration-300 animate-scale-in">
             <CardHeader className="flex flex-row items-center gap-2">
               <Clock className="h-5 w-5 text-electric-blue" />
               <CardTitle className="text-electric-blue">Time to Optimized Prompt</CardTitle>
@@ -265,9 +253,11 @@ export default function Metrics() {
                       backgroundColor: 'white',
                       border: '1px solid #e2e8f0',
                       borderRadius: '8px',
-                      color: '#0f172a'
+                      color: '#0f172a',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                     }}
                     formatter={(value) => [`${value}s`, 'Time']}
+                    labelFormatter={(label) => `Date: ${label}`}
                   />
                   <Area 
                     type="monotone" 
@@ -276,6 +266,7 @@ export default function Metrics() {
                     fillOpacity={1}
                     fill="url(#timeGradient)"
                     strokeWidth={2}
+                    animationDuration={1000}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -283,7 +274,7 @@ export default function Metrics() {
           </Card>
 
           {/* Conversion Funnel */}
-          <Card className="border-electric-blue/20 bg-white">
+          <Card className="border-electric-blue/20 bg-white hover:shadow-lg transition-all duration-300 animate-scale-in">
             <CardHeader className="flex flex-row items-center gap-2">
               <Target className="h-5 w-5 text-electric-blue" />
               <CardTitle className="text-electric-blue">Conversion Funnel</CardTitle>
@@ -296,14 +287,16 @@ export default function Metrics() {
                       backgroundColor: 'white',
                       border: '1px solid #e2e8f0',
                       borderRadius: '8px',
-                      color: '#0f172a'
+                      color: '#0f172a',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                     }}
-                    formatter={(value, name) => [value, name]}
+                    formatter={(value, name) => [`${value} users`, name]}
                   />
                   <Funnel
                     dataKey="value"
                     data={getFunnelChartData()}
                     isAnimationActive
+                    animationDuration={1000}
                   >
                     {getFunnelChartData().map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -315,7 +308,7 @@ export default function Metrics() {
           </Card>
 
           {/* Cohort Retention Chart */}
-          <Card className="border-electric-blue/20 bg-white lg:col-span-2 xl:col-span-1">
+          <Card className="border-electric-blue/20 bg-white lg:col-span-2 xl:col-span-1 hover:shadow-lg transition-all duration-300 animate-scale-in">
             <CardHeader className="flex flex-row items-center gap-2">
               <Users className="h-5 w-5 text-electric-blue" />
               <CardTitle className="text-electric-blue">Cohort Retention</CardTitle>
@@ -339,8 +332,10 @@ export default function Metrics() {
                       backgroundColor: 'white',
                       border: '1px solid #e2e8f0',
                       borderRadius: '8px',
-                      color: '#0f172a'
+                      color: '#0f172a',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                     }}
+                    formatter={(value, name) => [`${value}%`, name]}
                   />
                   <Line 
                     type="monotone" 
@@ -348,6 +343,9 @@ export default function Metrics() {
                     stroke="hsl(var(--electric-blue))" 
                     strokeWidth={2}
                     name="Period 1"
+                    animationDuration={1000}
+                    dot={{ fill: 'hsl(var(--electric-blue))', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: 'hsl(var(--electric-blue))' }}
                   />
                   <Line 
                     type="monotone" 
@@ -355,6 +353,9 @@ export default function Metrics() {
                     stroke="hsl(var(--electric-blue-light))" 
                     strokeWidth={2}
                     name="Period 2"
+                    animationDuration={1200}
+                    dot={{ fill: 'hsl(var(--electric-blue-light))', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: 'hsl(var(--electric-blue-light))' }}
                   />
                   <Line 
                     type="monotone" 
@@ -362,6 +363,9 @@ export default function Metrics() {
                     stroke="hsl(var(--primary))" 
                     strokeWidth={2}
                     name="Period 3"
+                    animationDuration={1400}
+                    dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -369,7 +373,7 @@ export default function Metrics() {
           </Card>
 
           {/* Churn Rate - Bar Chart */}
-          <Card className="border-electric-blue/20 bg-white">
+          <Card className="border-electric-blue/20 bg-white hover:shadow-lg transition-all duration-300 animate-scale-in">
             <CardHeader className="flex flex-row items-center gap-2">
               <TrendingDown className="h-5 w-5 text-red-500" />
               <CardTitle className="text-electric-blue">Churn Rate</CardTitle>
@@ -392,14 +396,17 @@ export default function Metrics() {
                       backgroundColor: 'white',
                       border: '1px solid #e2e8f0',
                       borderRadius: '8px',
-                      color: '#0f172a'
+                      color: '#0f172a',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                     }}
                     formatter={(value) => [`${value}%`, 'Churn Rate']}
+                    labelFormatter={(label) => `Date: ${label}`}
                   />
                   <Bar 
                     dataKey="value" 
                     fill="#ef4444"
                     radius={[4, 4, 0, 0]}
+                    animationDuration={1000}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -407,7 +414,7 @@ export default function Metrics() {
           </Card>
 
           {/* Growth Rate - Line Chart */}
-          <Card className="border-electric-blue/20 bg-white">
+          <Card className="border-electric-blue/20 bg-white hover:shadow-lg transition-all duration-300 animate-scale-in">
             <CardHeader className="flex flex-row items-center gap-2">
               <TrendingUp className="h-5 w-5 text-green-500" />
               <CardTitle className="text-electric-blue">Growth Rate</CardTitle>
@@ -430,16 +437,20 @@ export default function Metrics() {
                       backgroundColor: 'white',
                       border: '1px solid #e2e8f0',
                       borderRadius: '8px',
-                      color: '#0f172a'
+                      color: '#0f172a',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                     }}
                     formatter={(value) => [`${value}%`, 'Growth Rate']}
+                    labelFormatter={(label) => `Date: ${label}`}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="value" 
                     stroke="#22c55e" 
                     strokeWidth={3}
-                    dot={{ fill: '#22c55e' }}
+                    dot={{ fill: '#22c55e', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#22c55e' }}
+                    animationDuration={1000}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -447,7 +458,7 @@ export default function Metrics() {
           </Card>
 
           {/* Top Templates Usage - Horizontal Bar Chart */}
-          <Card className="border-electric-blue/20 bg-white lg:col-span-2 xl:col-span-1">
+          <Card className="border-electric-blue/20 bg-white lg:col-span-2 xl:col-span-1 hover:shadow-lg transition-all duration-300 animate-scale-in">
             <CardHeader className="flex flex-row items-center gap-2">
               <Target className="h-5 w-5 text-electric-blue" />
               <CardTitle className="text-electric-blue">Top Templates Usage</CardTitle>
@@ -473,13 +484,15 @@ export default function Metrics() {
                       backgroundColor: 'white',
                       border: '1px solid #e2e8f0',
                       borderRadius: '8px',
-                      color: '#0f172a'
+                      color: '#0f172a',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                     }}
-                    formatter={(value, name) => [value, 'Usage Count']}
+                    formatter={(value, name) => [`${value} uses`, 'Usage Count']}
                   />
                   <Bar 
                     dataKey="usage" 
                     radius={[0, 4, 4, 0]}
+                    animationDuration={1000}
                   >
                     {getTemplateUsageData().map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />

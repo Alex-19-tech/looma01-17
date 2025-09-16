@@ -15,7 +15,7 @@ interface MetricsFiltersProps {
 }
 
 const COHORT_OPTIONS = [
-  { label: "All Cohorts", value: "" },
+  { label: "All Cohorts", value: "all" },
   { label: "This Week", value: "this_week" },
   { label: "This Month", value: "this_month" },
   { label: "Q1 2024", value: "q1_2024" },
@@ -23,14 +23,14 @@ const COHORT_OPTIONS = [
 ];
 
 const PLAN_OPTIONS = [
-  { label: "All Plans", value: "" },
+  { label: "All Plans", value: "all" },
   { label: "Free", value: "free" },
   { label: "Pro", value: "pro" },
   { label: "Lifetime", value: "lifetime" },
 ];
 
 const CATEGORY_OPTIONS = [
-  { label: "All Categories", value: "" },
+  { label: "All Categories", value: "all" },
   { label: "Development & Code", value: "development" },
   { label: "Research & Knowledge", value: "research" },
   { label: "Creative & Design", value: "creative" },
@@ -41,7 +41,7 @@ export default function MetricsFilters({ filters, onFiltersChange }: MetricsFilt
   const updateFilter = (key: keyof MetricsFilterState, value: string) => {
     onFiltersChange({
       ...filters,
-      [key]: value || undefined
+      [key]: value === "all" ? undefined : value
     });
   };
 
@@ -61,7 +61,7 @@ export default function MetricsFilters({ filters, onFiltersChange }: MetricsFilt
     <div className="space-y-4">
       {/* Filter Controls */}
       <div className="flex items-center gap-4 flex-wrap">
-        <Select value={filters.cohort || ""} onValueChange={(value) => updateFilter("cohort", value)}>
+        <Select value={filters.cohort || "all"} onValueChange={(value) => updateFilter("cohort", value)}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Cohort" />
           </SelectTrigger>
@@ -74,7 +74,7 @@ export default function MetricsFilters({ filters, onFiltersChange }: MetricsFilt
           </SelectContent>
         </Select>
 
-        <Select value={filters.planType || ""} onValueChange={(value) => updateFilter("planType", value)}>
+        <Select value={filters.planType || "all"} onValueChange={(value) => updateFilter("planType", value)}>
           <SelectTrigger className="w-32">
             <SelectValue placeholder="Plan" />
           </SelectTrigger>
@@ -87,7 +87,7 @@ export default function MetricsFilters({ filters, onFiltersChange }: MetricsFilt
           </SelectContent>
         </Select>
 
-        <Select value={filters.templateCategory || ""} onValueChange={(value) => updateFilter("templateCategory", value)}>
+        <Select value={filters.templateCategory || "all"} onValueChange={(value) => updateFilter("templateCategory", value)}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Template Category" />
           </SelectTrigger>

@@ -20,7 +20,7 @@ export default function Metrics() {
   });
   const [filters, setFilters] = useState<MetricsFilterState>({});
   
-  const { metrics, cohortData, conversionData, alerts, loading, error, refetch } = useMetricsData(dateRange, filters);
+  const { metrics, cohortData, conversionData, templateUsageData, alerts, loading, error, refetch } = useMetricsData(dateRange, filters);
   const { exportToCSV, exportToPDF, exportToJSON, isExporting } = useMetricsExport();
 
   const handleExport = async (format: 'csv' | 'pdf' | 'json') => {
@@ -94,16 +94,7 @@ export default function Metrics() {
     }));
   };
 
-  const getTemplateUsageData = () => {
-    return [
-      { name: 'Code Generation', usage: 450, fill: 'hsl(var(--electric-blue))' },
-      { name: 'Bug Fixing', usage: 380, fill: 'hsl(var(--electric-blue-light))' },
-      { name: 'Documentation', usage: 320, fill: 'hsl(var(--primary))' },
-      { name: 'Testing', usage: 280, fill: 'hsl(var(--electric-blue-dark))' },
-      { name: 'Refactoring', usage: 240, fill: '#64748b' }
-    ];
-  };
-
+  // Template usage is provided by the hook as already aggregated top items
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -510,7 +501,7 @@ export default function Metrics() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={getTemplateUsageData()} layout="horizontal">
+                <BarChart data={templateUsageData} layout="horizontal">
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis 
                     type="number" 
@@ -539,8 +530,8 @@ export default function Metrics() {
                     radius={[0, 4, 4, 0]}
                     animationDuration={1000}
                   >
-                    {getTemplateUsageData().map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    {templateUsageData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill || 'hsl(var(--electric-blue))'} />
                     ))}
                   </Bar>
                 </BarChart>

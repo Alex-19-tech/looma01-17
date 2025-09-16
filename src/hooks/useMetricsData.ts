@@ -34,6 +34,13 @@ interface Alert {
   threshold_value: number;
 }
 
+interface TemplateUsageData {
+  name: string;
+  usage: number;
+  category?: string;
+  fill?: string;
+}
+
 // Mock data generators for demonstration
 const generateMockMetrics = (dateRange: DateRange): MetricData[] => {
   const metrics: MetricData[] = [];
@@ -125,6 +132,7 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
   const [rawMetrics, setRawMetrics] = useState<MetricData[]>([]);
   const [rawCohortData, setRawCohortData] = useState<CohortData[]>([]);
   const [rawConversionData, setRawConversionData] = useState<ConversionData[]>([]);
+  const [templateUsageData, setTemplateUsageData] = useState<TemplateUsageData[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -141,7 +149,7 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
       await ensureSampleDataExists(user.id);
 
       // Fetch all data with improved queries
-      const [metricsResult, cohortResult, conversionResult, alertsResult] = await Promise.allSettled([
+      const [metricsResult, cohortResult, conversionResult, alertsResult, templatesResult] = await Promise.allSettled([
         supabase
           .from('metrics')
           .select('*')
@@ -170,7 +178,14 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
           .from('metric_alerts')
           .select('*')
           .eq('user_id', user.id)
+          .eq('is_active', true),
+        
+        supabase
+          .from('prompt_templates')
+          .select('template_text, usage_count, category')
           .eq('is_active', true)
+          .order('usage_count', { ascending: false })
+          .limit(5)
       ]);
 
       // Process results with better error handling
@@ -190,9 +205,19 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
         ? alertsResult.value.data
         : [];
 
+      const templateUsage: TemplateUsageData[] = templatesResult.status === 'fulfilled' && templatesResult.value.data
+        ? templatesResult.value.data.map((t: any, idx: number) => ({
+            name: t.template_text?.slice(0, 24) + (t.template_text?.length > 24 ? '…' : ''),
+            usage: t.usage_count ?? 0,
+            category: t.category,
+            fill: idx === 0 ? 'hsl(var(--electric-blue))' : idx === 1 ? 'hsl(var(--electric-blue-light))' : idx === 2 ? 'hsl(var(--primary))' : idx === 3 ? 'hsl(var(--electric-blue-dark))' : '#64748b'
+          }))
+        : [];
+
       setRawMetrics(metrics);
       setRawCohortData(cohortData);
       setRawConversionData(conversionData);
+      setTemplateUsageData(templateUsage);
       setAlerts(alertsData);
 
     } catch (err) {
@@ -323,6 +348,18 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
           fetchAllData();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'prompt_templates'
+        },
+        (payload) => {
+          console.log('Real-time templates update:', payload);
+          fetchAllData();
+        }
+      )
       .subscribe((status) => {
         console.log('Subscription status:', status);
       });
@@ -334,6 +371,7 @@ export function useMetricsData(dateRange: DateRange, filters: MetricsFilterState
 
   return {
     ...filteredData,
+    templateUsageData,
     alerts,
     loading,
     error,

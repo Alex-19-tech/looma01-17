@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, FunnelChart, Funnel, Cell, AreaChart, Area, BarChart, Bar } from "recharts";
-import { AlertTriangle, Clock, Users, TrendingUp, TrendingDown, Target, Download, FileText, Settings } from "lucide-react";
-import { subDays } from "date-fns";
+import { AlertTriangle, Clock, Users, TrendingUp, TrendingDown, Target, Download, FileText, Settings, Wifi, WifiOff, Activity, BarChart3, Database, Zap } from "lucide-react";
+import { subDays, formatDistanceToNow } from "date-fns";
 import MetricsDateFilter, { DateRange } from "@/components/MetricsDateFilter";
 import MetricsFilters, { MetricsFilterState } from "@/components/MetricsFilters";
 import { useMetricsData } from "@/hooks/useMetricsData";
 import { useMetricsExport } from "@/hooks/useMetricsExport";
+import { useRealTimeSimulator } from "@/hooks/useRealTimeSimulator";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Metrics() {
@@ -19,12 +21,42 @@ export default function Metrics() {
     to: new Date()
   });
   const [filters, setFilters] = useState<MetricsFilterState>({});
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   
   const { metrics, cohortData, conversionData, templateUsageData, alerts, loading, error, refetch } = useMetricsData(dateRange, filters);
   const { exportToCSV, exportToPDF, exportToJSON, isExporting } = useMetricsExport();
+  const { triggerUpdate } = useRealTimeSimulator({ enabled: true, interval: 45000 });
+
+  // Update timestamp when data changes
+  useEffect(() => {
+    if (!loading && (metrics.length > 0 || cohortData.length > 0 || conversionData.length > 0)) {
+      setLastUpdate(new Date());
+      
+      // Show toast notification for data updates (only after initial load)
+      if (lastUpdate && Date.now() - lastUpdate.getTime() > 5000) {
+        toast({
+          title: "Data Updated",
+          description: "Metrics have been refreshed with real-time data",
+        });
+      }
+    }
+  }, [metrics, cohortData, conversionData, loading]);
 
   const handleExport = async (format: 'csv' | 'pdf' | 'json') => {
-    const exportData = { metrics, cohortData, conversionData };
+    const exportData = { 
+      metrics, 
+      cohortData, 
+      conversionData,
+      templateUsageData,
+      summary: {
+        totalMetrics: metrics.length,
+        totalCohorts: cohortData.length,
+        totalConversions: conversionData.length,
+        dateRange,
+        filters,
+        exportedAt: new Date().toISOString()
+      }
+    };
     
     let result;
     switch (format) {
@@ -94,7 +126,21 @@ export default function Metrics() {
     }));
   };
 
-  // Template usage is provided by the hook as already aggregated top items
+  const getMetricsSummary = () => {
+    const totalRecords = metrics.length + cohortData.length + conversionData.length;
+    const latestMetric = metrics.length > 0 ? new Date(Math.max(...metrics.map(m => new Date(m.timestamp).getTime()))) : null;
+    
+    return {
+      totalRecords,
+      metricsCount: metrics.length,
+      cohortCount: cohortData.length,
+      conversionCount: conversionData.length,
+      latestMetric,
+      dataHealth: totalRecords > 0 ? 'healthy' : 'no-data'
+    };
+  };
+
+  const summary = getMetricsSummary();
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -136,24 +182,50 @@ export default function Metrics() {
             </div>
             <h1 className="text-xl font-bold text-gray-900">Preflix</h1>
             <div className="h-6 w-px bg-gray-300 mx-4"></div>
-            <h2 className="text-lg font-semibold text-electric-blue">Metrics</h2>
+            <div className="flex items-center gap-3">
+              <BarChart3 className="h-5 w-5 text-electric-blue" />
+              <h2 className="text-lg font-semibold text-electric-blue">Analytics Dashboard</h2>
+            </div>
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Real-time status indicator */}
-            <div className="flex items-center gap-2 text-sm">
-              <div className={`h-2 w-2 rounded-full ${error ? 'bg-red-500' : 'bg-green-500 animate-pulse'}`}></div>
-              <span className="text-gray-600 hidden sm:inline">
-                {error ? 'Offline' : 'Live'}
-              </span>
+            {/* Real-time status indicator with more detail */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-50 border">
+              {error ? (
+                <>
+                  <WifiOff className="h-4 w-4 text-red-500" />
+                  <span className="text-sm text-red-600 hidden sm:inline">Offline</span>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1">
+                    <Wifi className="h-4 w-4 text-green-500" />
+                    <Activity className="h-3 w-3 text-green-500 animate-pulse" />
+                  </div>
+                  <span className="text-sm text-green-600 hidden sm:inline">Live</span>
+                </>
+              )}
             </div>
+
+            {/* Data summary badge */}
+            <Badge variant="outline" className="gap-1 hidden md:flex">
+              <Database className="h-3 w-3" />
+              {summary.totalRecords} records
+            </Badge>
+
+            {/* Last updated indicator */}
+            {summary.latestMetric && (
+              <span className="text-xs text-gray-500 hidden lg:inline">
+                Updated {formatDistanceToNow(lastUpdate, { addSuffix: true })}
+              </span>
+            )}
             
             {/* Export buttons */}
             <Button
               variant="outline"
               size="sm"
               onClick={() => handleExport('csv')}
-              disabled={isExporting}
+              disabled={isExporting || summary.totalRecords === 0}
               className="gap-2 transition-all duration-200 hover:scale-105"
             >
               <FileText className="h-4 w-4" />
@@ -163,7 +235,7 @@ export default function Metrics() {
               variant="outline"
               size="sm"
               onClick={() => handleExport('json')}
-              disabled={isExporting}
+              disabled={isExporting || summary.totalRecords === 0}
               className="gap-2 transition-all duration-200 hover:scale-105"
             >
               <FileText className="h-4 w-4" />
@@ -173,11 +245,24 @@ export default function Metrics() {
               variant="outline"
               size="sm"
               onClick={() => handleExport('pdf')}
-              disabled={isExporting}
+              disabled={isExporting || summary.totalRecords === 0}
               className="gap-2 transition-all duration-200 hover:scale-105"
             >
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">PDF</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                triggerUpdate();
+                refetch();
+              }}
+              disabled={loading}
+              className="gap-2 transition-all duration-200 hover:scale-105"
+            >
+              <Zap className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Simulate Data</span>
             </Button>
             <Button
               variant="outline"
@@ -195,7 +280,35 @@ export default function Metrics() {
 
       {/* Main Content */}
       <div className="pt-24 p-6 max-w-7xl mx-auto">
-        {/* Error State with Retry Option */}
+        {/* Data Summary Overview */}
+        <div className="mb-8 animate-fade-in">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="border-electric-blue/20">
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-electric-blue">{summary.metricsCount}</div>
+                <div className="text-sm text-gray-600">Metrics Points</div>
+              </CardContent>
+            </Card>
+            <Card className="border-electric-blue/20">
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-electric-blue">{summary.cohortCount}</div>
+                <div className="text-sm text-gray-600">Cohort Records</div>
+              </CardContent>
+            </Card>
+            <Card className="border-electric-blue/20">
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-electric-blue">{summary.conversionCount}</div>
+                <div className="text-sm text-gray-600">Conversion Stages</div>
+              </CardContent>
+            </Card>
+            <Card className="border-electric-blue/20">
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-electric-blue">{templateUsageData.length}</div>
+                <div className="text-sm text-gray-600">Active Templates</div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
         {error && (
           <Alert className="mb-8 border-red-200 bg-red-50 animate-fade-in">
             <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -233,9 +346,21 @@ export default function Metrics() {
           <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Filters & Date Range</h3>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>Total Records: {metrics.length + cohortData.length + conversionData.length}</span>
-                {isExporting && <span className="text-blue-600">Exporting...</span>}
+              <div className="flex items-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  <span>Total Records: {summary.totalRecords}</span>
+                </div>
+                {isExporting && (
+                  <Badge variant="secondary" className="animate-pulse">
+                    Exporting...
+                  </Badge>
+                )}
+                {summary.dataHealth === 'no-data' && (
+                  <Badge variant="outline" className="text-amber-600 border-amber-300">
+                    Sample Data Mode
+                  </Badge>
+                )}
               </div>
             </div>
             <div className="flex flex-col lg:flex-row gap-6">
@@ -257,89 +382,119 @@ export default function Metrics() {
           </div>
         </div>
 
-        {/* Charts Grid */}
+        {/* Charts Grid with Enhanced Components */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {/* Time to Optimized Prompt - Area Chart */}
           <Card className="border-electric-blue/20 bg-white lg:col-span-2 xl:col-span-1 hover:shadow-lg transition-all duration-300 animate-scale-in">
-            <CardHeader className="flex flex-row items-center gap-2">
-              <Clock className="h-5 w-5 text-electric-blue" />
-              <CardTitle className="text-electric-blue">Time to Optimized Prompt</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-electric-blue" />
+                <CardTitle className="text-electric-blue">Time to Optimized Prompt</CardTitle>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {getChartData('time_to_optimized').length} points
+              </Badge>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={getChartData('time_to_optimized')}>
-                  <defs>
-                    <linearGradient id="timeGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--electric-blue))" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="hsl(var(--electric-blue))" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#64748b"
-                    fontSize={12}
-                  />
-                  <YAxis 
-                    stroke="#64748b"
-                    fontSize={12}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      color: '#0f172a',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-                    }}
-                    formatter={(value) => [`${value}s`, 'Time']}
-                    labelFormatter={(label) => `Date: ${label}`}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="hsl(var(--electric-blue))" 
-                    fillOpacity={1}
-                    fill="url(#timeGradient)"
-                    strokeWidth={2}
-                    animationDuration={1000}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              {getChartData('time_to_optimized').length === 0 ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No timing data available</p>
+                    <p className="text-sm">Data will appear as users interact with prompts</p>
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={getChartData('time_to_optimized')}>
+                    <defs>
+                      <linearGradient id="timeGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--electric-blue))" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="hsl(var(--electric-blue))" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#64748b"
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      stroke="#64748b"
+                      fontSize={12}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        color: '#0f172a',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      }}
+                      formatter={(value) => [`${value}s`, 'Time']}
+                      labelFormatter={(label) => `Date: ${label}`}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="hsl(var(--electric-blue))" 
+                      fillOpacity={1}
+                      fill="url(#timeGradient)"
+                      strokeWidth={2}
+                      animationDuration={1000}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
 
           {/* Conversion Funnel */}
           <Card className="border-electric-blue/20 bg-white hover:shadow-lg transition-all duration-300 animate-scale-in">
-            <CardHeader className="flex flex-row items-center gap-2">
-              <Target className="h-5 w-5 text-electric-blue" />
-              <CardTitle className="text-electric-blue">Conversion Funnel</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-electric-blue" />
+                <CardTitle className="text-electric-blue">Conversion Funnel</CardTitle>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {getFunnelChartData().length} stages
+              </Badge>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <FunnelChart>
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      color: '#0f172a',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-                    }}
-                    formatter={(value, name) => [`${value} users`, name]}
-                  />
-                  <Funnel
-                    dataKey="value"
-                    data={getFunnelChartData()}
-                    isAnimationActive
-                    animationDuration={1000}
-                  >
-                    {getFunnelChartData().map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Funnel>
-                </FunnelChart>
-              </ResponsiveContainer>
+              {getFunnelChartData().length === 0 ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No conversion data</p>
+                    <p className="text-sm">Funnel data will appear as users progress</p>
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <FunnelChart>
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        color: '#0f172a',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      }}
+                      formatter={(value, name) => [`${value} users`, name]}
+                    />
+                    <Funnel
+                      dataKey="value"
+                      data={getFunnelChartData()}
+                      isAnimationActive
+                      animationDuration={1000}
+                    >
+                      {getFunnelChartData().map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Funnel>
+                  </FunnelChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
 
@@ -495,47 +650,62 @@ export default function Metrics() {
 
           {/* Top Templates Usage - Horizontal Bar Chart */}
           <Card className="border-electric-blue/20 bg-white lg:col-span-2 xl:col-span-1 hover:shadow-lg transition-all duration-300 animate-scale-in">
-            <CardHeader className="flex flex-row items-center gap-2">
-              <Target className="h-5 w-5 text-electric-blue" />
-              <CardTitle className="text-electric-blue">Top Templates Usage</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-electric-blue" />
+                <CardTitle className="text-electric-blue">Top Templates Usage</CardTitle>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {templateUsageData.length} templates
+              </Badge>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={templateUsageData} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis 
-                    type="number" 
-                    stroke="#64748b"
-                    fontSize={12}
-                  />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
-                    stroke="#64748b"
-                    fontSize={12}
-                    width={80}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      color: '#0f172a',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-                    }}
-                    formatter={(value, name) => [`${value} uses`, 'Usage Count']}
-                  />
-                  <Bar 
-                    dataKey="usage" 
-                    radius={[0, 4, 4, 0]}
-                    animationDuration={1000}
-                  >
-                    {templateUsageData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill || 'hsl(var(--electric-blue))'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              {templateUsageData.length === 0 ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No template usage data</p>
+                    <p className="text-sm">Data will show as templates are used</p>
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={templateUsageData} layout="horizontal">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis 
+                      type="number" 
+                      stroke="#64748b"
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      type="category" 
+                      dataKey="name" 
+                      stroke="#64748b"
+                      fontSize={12}
+                      width={80}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        color: '#0f172a',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      }}
+                      formatter={(value, name) => [`${value} uses`, 'Usage Count']}
+                    />
+                    <Bar 
+                      dataKey="usage" 
+                      radius={[0, 4, 4, 0]}
+                      animationDuration={1000}
+                    >
+                      {templateUsageData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill || 'hsl(var(--electric-blue))'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </div>

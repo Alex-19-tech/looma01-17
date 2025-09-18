@@ -7,6 +7,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { PaystackCheckout } from "@/components/PaystackCheckout";
 
 const Pricing = () => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -25,12 +26,6 @@ const Pricing = () => {
       navigate('/auth');
       return;
     }
-
-    toast({
-      title: "Payment Integration Removed",
-      description: "Payment integration has been completely removed. Please implement a new payment method.",
-      variant: "destructive",
-    });
   };
 
   return (
@@ -117,13 +112,13 @@ const Pricing = () => {
               </CardHeader>
 
               <CardContent className="px-8 pb-8">
-                <Button 
-                  onClick={handleSubscribe}
-                  disabled={isProcessing || loading}
+                <PaystackCheckout
+                  plan="pro"
+                  amount={10}
+                  description={!user ? 'Sign In to Subscribe' : 'Get Pro Access'}
                   className="w-full bg-white text-black hover:bg-white/90 text-lg py-4 rounded-xl font-semibold shadow-lg mb-8"
-                >
-                  {isProcessing ? 'Processing...' : !user ? 'Sign In to Subscribe' : 'Get Pro Access'}
-                </Button>
+                  disabled={!user || loading}
+                />
 
                 <div className="space-y-4">
                   {[

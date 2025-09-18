@@ -8,6 +8,8 @@ export interface UserProfile {
   avatar_url: string | null;
   role: 'admin' | 'user' | 'guest';
   plan: 'free' | 'pro' | 'enterprise';
+  payment_status: string | null;
+  subscription_expires_at: string | null;
   last_login: string | null;
   preferences: any;
   created_at: string;

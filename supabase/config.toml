@@ -1,1 +1,38 @@
 project_id = "jikaltfeyvxoepnftmuq"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54324
+external_url = "https://jikaltfeyvxoepnftmuq.supabase.co/auth/v1"
+additional_redirect_urls = ["https://prelix.top"]
+jwt_expiry = 3600
+enable_signup = true
+enable_confirmations = true
+
+[rest]
+enabled = true
+port = 54323
+max_rows = 1000
+
+[realtime]
+enabled = true
+port = 54325
+
+[functions.paystack-initialize]
+verify_jwt = true
+
+[functions.paystack-verify]
+verify_jwt = true
+
+[functions.ai-workflow]
+verify_jwt = true
+
+[functions.prompt-processor]
+verify_jwt = true

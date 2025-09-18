@@ -678,6 +678,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          email: string
+          id: string
+          paystack_data: Json | null
+          plan: string
+          reference: string
+          status: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          email: string
+          id?: string
+          paystack_data?: Json | null
+          plan: string
+          reference: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          email?: string
+          id?: string
+          paystack_data?: Json | null
+          plan?: string
+          reference?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

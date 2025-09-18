@@ -83,7 +83,7 @@ export const PaystackCheckout = ({
 
   const openPaystackPopup = (paymentData: any) => {
     const handler = window.PaystackPop.setup({
-      key: 'pk_test_your_public_key_here', // This will be replaced with actual public key from database
+      key: 'pk_test_b74e730c9eb9fe4ed348e5d003b97dc30a139b9b', // Paystack test public key
       email: user?.email,
       amount: amount * 100, // Convert to kobo
       currency: 'NGN',

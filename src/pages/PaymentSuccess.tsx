@@ -34,7 +34,9 @@ const PaymentSuccess = () => {
 
         if (data.status) {
           setStatus('success');
-          setMessage(`Payment successful! Your ${data.data.plan} subscription has been activated.`);
+          const usdPrice = data.data.usd_price || 10;
+          const kesAmount = Math.round(usdPrice * 129.202);
+          setMessage(`Payment successful! Your ${data.data.plan} subscription has been activated. Charged KES ${kesAmount.toLocaleString()} (≈$${usdPrice}).`);
           
           toast({
             title: "Payment Successful!",

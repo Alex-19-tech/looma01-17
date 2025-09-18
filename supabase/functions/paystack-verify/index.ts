@@ -77,7 +77,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Update user profile with new subscription
     const plan = transaction.metadata?.plan || 'pro';
-    const amount = transaction.amount / 100; // Convert from kobo
+    const amount = transaction.amount / 100; // Convert from KES kobo
+    const usdPrice = transaction.metadata?.usd_price || 10; // Fallback to $10
+    const fxRate = transaction.metadata?.fx_rate || 129.202;
 
     // Calculate subscription expiry (30 days from now)
     const subscriptionExpiry = new Date();
@@ -108,7 +110,11 @@ const handler = async (req: Request): Promise<Response> => {
       .update({
         status: 'success',
         verified_at: new Date().toISOString(),
-        paystack_data: transaction
+        paystack_data: transaction,
+        // Update currency fields if they weren't set during initialization
+        usd_price: usdPrice,
+        fx_rate_snapshot: fxRate,
+        charged_amount_kes: transaction.amount
       })
       .eq('reference', reference)
       .eq('user_id', user.id);
@@ -127,6 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
         data: {
           reference: transaction.reference,
           amount,
+          usd_price: usdPrice,
           plan,
           subscription_expires_at: subscriptionExpiry.toISOString()
         }

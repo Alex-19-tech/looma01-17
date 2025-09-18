@@ -104,14 +104,21 @@ const Pricing = () => {
               
               <CardHeader className="text-center pt-16 pb-8">
                 <CardTitle className="text-3xl font-bold text-white mb-4">Pro Access</CardTitle>
-                <div className="flex items-baseline justify-center gap-2 mb-4">
+                <div className="flex items-baseline justify-center gap-2 mb-2">
                   <span className="text-6xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">$10</span>
                   <span className="text-xl text-white/60">/month</span>
                 </div>
+                <p className="text-white/60 text-xs mb-2">Billed in Kenyan Shillings (KES) at current rate</p>
                 <p className="text-white/70 text-sm">Perfect for professionals</p>
               </CardHeader>
 
               <CardContent className="px-8 pb-8">
+                <div className="mb-4 p-3 bg-white/10 rounded-lg border border-white/20">
+                  <p className="text-white/90 text-sm text-center">
+                    You will be charged <strong>KES 1,292.02</strong> (≈$10) via Paystack
+                  </p>
+                </div>
+                
                 <PaystackCheckout
                   plan="pro"
                   amount={10}

@@ -82,11 +82,15 @@ export const PaystackCheckout = ({
   };
 
   const openPaystackPopup = (paymentData: any) => {
+    // Calculate KES amount using fixed rate (USD to KES: 129.202)
+    const fxRate = 129.202;
+    const kesAmount = Math.round(amount * fxRate * 100); // Convert to KES kobo
+    
     const handler = window.PaystackPop.setup({
       key: 'pk_test_b74e730c9eb9fe4ed348e5d003b97dc30a139b9b', // Paystack test public key
       email: user?.email,
-      amount: amount * 100, // Convert to kobo
-      currency: 'NGN',
+      amount: kesAmount, // Amount in KES kobo
+      currency: 'KES',
       ref: paymentData.reference,
       callback: async (response: any) => {
         console.log('Payment callback:', response);

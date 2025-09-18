@@ -681,40 +681,49 @@ export type Database = {
       user_transactions: {
         Row: {
           amount: number
+          charged_amount_kes: number | null
           created_at: string
           email: string
+          fx_rate_snapshot: number | null
           id: string
           paystack_data: Json | null
           plan: string
           reference: string
           status: string
           updated_at: string
+          usd_price: number | null
           user_id: string
           verified_at: string | null
         }
         Insert: {
           amount: number
+          charged_amount_kes?: number | null
           created_at?: string
           email: string
+          fx_rate_snapshot?: number | null
           id?: string
           paystack_data?: Json | null
           plan: string
           reference: string
           status?: string
           updated_at?: string
+          usd_price?: number | null
           user_id: string
           verified_at?: string | null
         }
         Update: {
           amount?: number
+          charged_amount_kes?: number | null
           created_at?: string
           email?: string
+          fx_rate_snapshot?: number | null
           id?: string
           paystack_data?: Json | null
           plan?: string
           reference?: string
           status?: string
           updated_at?: string
+          usd_price?: number | null
           user_id?: string
           verified_at?: string | null
         }

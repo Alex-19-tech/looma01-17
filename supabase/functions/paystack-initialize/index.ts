@@ -8,7 +8,7 @@ const corsHeaders = {
 
 interface PaymentRequest {
   email: string;
-  amount: number;
+  amount: number; // USD amount for display
   plan: string;
   callback_url: string;
 }
@@ -41,7 +41,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { email, amount, plan, callback_url }: PaymentRequest = await req.json();
 
-    console.log('Initializing payment for:', { email, amount, plan });
+    // Get FX rate from environment (default to 129.202 if not set)
+    const fxRate = parseFloat(Deno.env.get('FX_RATE_USD_TO_KES') || '129.202');
+    const kesAmount = Math.round(amount * fxRate * 100); // Convert to KES kobo
+
+    console.log('Initializing payment for:', { email, usd_amount: amount, kes_amount: kesAmount, plan, fx_rate: fxRate });
 
     // Initialize transaction with Paystack
     const paystackResponse = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -52,17 +56,24 @@ const handler = async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         email,
-        amount: amount * 100, // Convert to kobo
-        currency: 'NGN',
+        amount: kesAmount, // Amount in KES kobo
+        currency: 'KES',
         callback_url,
         metadata: {
           user_id: user.id,
           plan,
+          usd_price: amount,
+          fx_rate: fxRate,
           custom_fields: [
             {
               display_name: "Plan",
               variable_name: "plan",
               value: plan
+            },
+            {
+              display_name: "USD Price",
+              variable_name: "usd_price",
+              value: `$${amount}`
             }
           ]
         }
@@ -87,7 +98,10 @@ const handler = async (req: Request): Promise<Response> => {
       .insert({
         user_id: user.id,
         reference: paystackData.data.reference,
-        amount,
+        amount: kesAmount / 100, // Store KES amount in whole units
+        usd_price: amount,
+        fx_rate_snapshot: fxRate,
+        charged_amount_kes: kesAmount,
         plan,
         status: 'pending',
         email

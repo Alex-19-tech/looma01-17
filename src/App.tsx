@@ -21,7 +21,6 @@ import Admin from "./pages/Admin";
 import ModelDetails from "./pages/ModelDetails";
 import Metrics from "./pages/Metrics";
 import Referrals from "./pages/Referrals";
-import ReferralSignUp from "./pages/ReferralSignUp";
 
 const queryClient = new QueryClient();
 
@@ -39,7 +38,6 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
-            <Route path="/referral-signup" element={<ReferralSignUp />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             

@@ -17,9 +17,25 @@ export const usePaystackConfig = (): PaystackConfig => {
   useEffect(() => {
     const fetchPaystackConfig = async () => {
       try {
-        // For now, we'll use the stored secret as public key
-        // In a real implementation, you'd store public and secret keys separately
-        const publicKey = 'pk_test_b74e730c9eb9fe4ed348e5d003b97dc30a139b9b'; // Default test key
+        // Fetch Paystack public key from edge function
+        const { data, error } = await supabase.functions.invoke('get-paystack-config');
+        
+        if (error) {
+          throw new Error(error.message || 'Failed to fetch Paystack config');
+        }
+
+        if (data?.error) {
+          throw new Error(data.error);
+        }
+
+        const publicKey = data?.publicKey;
+        
+        if (!publicKey) {
+          throw new Error('No Paystack public key received');
+        }
+
+        // Log for debugging (safe since it's a public key)
+        console.log('Paystack public key loaded:', publicKey.substring(0, 10) + '...');
         
         setConfig({
           publicKey,

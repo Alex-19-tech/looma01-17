@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { usePaystackConfig } from '@/hooks/usePaystackConfig';
 import { Loader2 } from 'lucide-react';
 
 interface PaystackCheckoutProps {
@@ -29,12 +30,22 @@ export const PaystackCheckout = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { publicKey, loading: configLoading, error: configError } = usePaystackConfig();
 
   const initializePayment = async () => {
     if (!user) {
       toast({
         title: "Authentication Required",
         description: "Please sign in to make a payment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!publicKey) {
+      toast({
+        title: "Configuration Error",
+        description: configError || "Paystack configuration not available. Please try again later.",
         variant: "destructive",
       });
       return;
@@ -97,8 +108,11 @@ export const PaystackCheckout = ({
     console.assert(typeof handlePaymentSuccess === 'function', 
                    'handlePaymentSuccess must be a function');
     
+    // Log Paystack key for debugging
+    console.log('Paystack key:', publicKey);
+    
     const handler = window.PaystackPop.setup({
-      key: 'pk_test_b74e730c9eb9fe4ed348e5d003b97dc30a139b9b', // Paystack test public key
+      key: publicKey,
       email: user?.email,
       amount: kesAmount, // Amount in KES kobo
       currency: 'KES',
@@ -149,13 +163,18 @@ export const PaystackCheckout = ({
   return (
     <Button
       onClick={initializePayment}
-      disabled={disabled || isProcessing}
+      disabled={disabled || isProcessing || configLoading || !publicKey}
       className={className}
     >
       {isProcessing ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Processing...
+        </>
+      ) : configLoading ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Loading...
         </>
       ) : (
         description

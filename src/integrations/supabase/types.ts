@@ -360,40 +360,58 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_referrals_count: number
           avatar_url: string | null
+          chat_interface_count: number
           created_at: string
           full_name: string | null
+          has_unlimited_interfaces: boolean
           id: string
           last_login: string | null
           payment_status: string | null
           plan: Database["public"]["Enums"]["subscription_plan"]
           preferences: Json | null
+          referral_code: string | null
+          referral_rewards_weeks: number
+          referred_by: string | null
           role: Database["public"]["Enums"]["app_role"]
           subscription_expires_at: string | null
           updated_at: string
         }
         Insert: {
+          active_referrals_count?: number
           avatar_url?: string | null
+          chat_interface_count?: number
           created_at?: string
           full_name?: string | null
+          has_unlimited_interfaces?: boolean
           id: string
           last_login?: string | null
           payment_status?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           preferences?: Json | null
+          referral_code?: string | null
+          referral_rewards_weeks?: number
+          referred_by?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           subscription_expires_at?: string | null
           updated_at?: string
         }
         Update: {
+          active_referrals_count?: number
           avatar_url?: string | null
+          chat_interface_count?: number
           created_at?: string
           full_name?: string | null
+          has_unlimited_interfaces?: boolean
           id?: string
           last_login?: string | null
           payment_status?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           preferences?: Json | null
+          referral_code?: string | null
+          referral_rewards_weeks?: number
+          referred_by?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           subscription_expires_at?: string | null
           updated_at?: string
@@ -734,6 +752,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_create_chat_interface: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       get_active_templates_by_category: {
         Args: { _category: string; _subcategory?: string }
         Returns: {
@@ -770,6 +792,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_chat_interface_count: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
       match_templates_to_input: {
         Args: {
           _category: string
@@ -787,6 +813,10 @@ export type Database = {
           tags: string[]
           template_text: string
         }[]
+      }
+      process_referral_activation: {
+        Args: { _user_id: string }
+        Returns: undefined
       }
       update_template_usage: {
         Args: { _effectiveness_rating?: number; _template_id: string }

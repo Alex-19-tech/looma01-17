@@ -14,7 +14,7 @@ import { TemplatePreview } from "./TemplatePreview";
 import { TypingDots } from "./TypingDots";
 import { useStreamingMessage } from "@/hooks/useStreamingMessage";
 import { useChatInterfaceLimit } from "@/hooks/useChatInterfaceLimit";
-import { UpgradeModal } from "./UpgradeModal";
+import { UpgradeOrReferModal } from "./UpgradeOrReferModal";
 import { ChatInterfaceCounter } from "./ChatInterfaceCounter";
 import { Loader2, Sparkles, Copy, Send, User } from "lucide-react";
 
@@ -1340,7 +1340,7 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
           onClose={() => setUserProfileOpen(false)} 
         />
         
-        <UpgradeModal 
+        <UpgradeOrReferModal 
           isOpen={upgradeModalOpen}
           onClose={() => setUpgradeModalOpen(false)}
           currentCount={count}

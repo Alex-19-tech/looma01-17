@@ -7,7 +7,7 @@ import { UserProfileDrawer } from "@/components/UserProfileDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useChatInterfaceLimit } from "@/hooks/useChatInterfaceLimit";
-import { UpgradeModal } from "@/components/UpgradeModal";
+import { UpgradeOrReferModal } from "@/components/UpgradeOrReferModal";
 
 export default function AIChat() {
   const { sessionId } = useParams();
@@ -80,7 +80,7 @@ export default function AIChat() {
           </div>
         </div>
         <UserProfileDrawer isOpen={userProfileOpen} onClose={() => setUserProfileOpen(false)} />
-        <UpgradeModal 
+        <UpgradeOrReferModal 
           isOpen={upgradeModalOpen}
           onClose={() => setUpgradeModalOpen(false)}
           currentCount={count}

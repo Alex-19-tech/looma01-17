@@ -10,7 +10,7 @@ import { useToast } from "./ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { useChatInterfaceLimit } from "@/hooks/useChatInterfaceLimit";
-import { UpgradeModal } from "./UpgradeModal";
+import { UpgradeOrReferModal } from "./UpgradeOrReferModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -301,7 +301,7 @@ export function ChatSidebar({ isOpen, onClose, onUserProfileClick }: ChatSidebar
         </AlertDialog>
 
         {/* Upgrade Modal */}
-        <UpgradeModal 
+        <UpgradeOrReferModal 
           isOpen={upgradeModalOpen}
           onClose={() => setUpgradeModalOpen(false)}
           currentCount={count}

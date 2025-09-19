@@ -99,6 +99,26 @@ serve(async (req) => {
 });
 
 async function createChatSession(userId: string, userInput: string, promptType: string) {
+  // First check if user can create new chat interface
+  const { data: canCreate, error: limitError } = await supabase.rpc('can_create_chat_interface', {
+    _user_id: userId
+  });
+
+  if (limitError) {
+    console.error('Error checking chat interface limit:', limitError);
+    throw new Error('Failed to check chat interface limits');
+  }
+
+  if (!canCreate) {
+    return new Response(JSON.stringify({ 
+      error: 'CHAT_LIMIT_REACHED',
+      message: 'You have reached your chat interface limit. Please upgrade or refer friends to unlock unlimited interfaces.' 
+    }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   // Create new chat session
   const { data: session, error: sessionError } = await supabase
     .from('chat_sessions')
@@ -110,6 +130,19 @@ async function createChatSession(userId: string, userInput: string, promptType: 
     .single();
 
   if (sessionError) throw sessionError;
+
+  // Increment chat interface count for users who don't have unlimited
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('has_unlimited_interfaces')
+    .eq('id', userId)
+    .single();
+
+  if (!profile?.has_unlimited_interfaces) {
+    await supabase.rpc('increment_chat_interface_count', {
+      _user_id: userId
+    });
+  }
 
   // Store user input for analytics
   await supabase

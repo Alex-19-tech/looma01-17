@@ -13,6 +13,9 @@ import { TemplateSelector } from "./TemplateSelector";
 import { TemplatePreview } from "./TemplatePreview";
 import { TypingDots } from "./TypingDots";
 import { useStreamingMessage } from "@/hooks/useStreamingMessage";
+import { useChatInterfaceLimit } from "@/hooks/useChatInterfaceLimit";
+import { UpgradeModal } from "./UpgradeModal";
+import { ChatInterfaceCounter } from "./ChatInterfaceCounter";
 import { Loader2, Sparkles, Copy, Send, User } from "lucide-react";
 
 interface Message {
@@ -127,7 +130,10 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userProfileOpen, setUserProfileOpen] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [pendingConfirmation, setPendingConfirmation] = useState<string>('');
+  const { toast } = useToast();
+  const { canCreate, count, maxCount, hasUnlimited, loading: limitLoading, incrementCount, checkLimit } = useChatInterfaceLimit();
   const [showClarifyButton, setShowClarifyButton] = useState(false);
   const [isInputAlwaysActive, setIsInputAlwaysActive] = useState(true);
   const [isRequestingClarification, setIsRequestingClarification] = useState(false);
@@ -154,8 +160,6 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
   // Streaming functionality
   const { startStreaming, appendToStream, completeStream, getStreamingText, isStreaming } = useStreamingMessage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  const { toast } = useToast();
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -239,6 +243,12 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
   };
 
   const handleInitialInput = async (userInput: string, promptType: string) => {
+    // Check if user can create new chat interface
+    if (!canCreate && !hasUnlimited) {
+      setUpgradeModalOpen(true);
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Create chat session
@@ -249,6 +259,12 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
           promptType
         }
       });
+
+      // Handle chat limit reached error
+      if (sessionError && sessionData?.error === 'CHAT_LIMIT_REACHED') {
+        setUpgradeModalOpen(true);
+        return;
+      }
 
       if (sessionError) throw sessionError;
       
@@ -1316,6 +1332,13 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
         <UserProfileDrawer 
           isOpen={userProfileOpen} 
           onClose={() => setUserProfileOpen(false)} 
+        />
+        
+        <UpgradeModal 
+          isOpen={upgradeModalOpen}
+          onClose={() => setUpgradeModalOpen(false)}
+          currentCount={count}
+          maxCount={maxCount}
         />
       </div>
       

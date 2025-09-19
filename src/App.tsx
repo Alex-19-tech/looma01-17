@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import ModelDetails from "./pages/ModelDetails";
 import Metrics from "./pages/Metrics";
+import Referrals from "./pages/Referrals";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,11 @@ const App = () => (
             <Route path="/metrics" element={
               <ProtectedRoute>
                 <Metrics />
+              </ProtectedRoute>
+            } />
+            <Route path="/referrals" element={
+              <ProtectedRoute>
+                <Referrals />
               </ProtectedRoute>
             } />
             

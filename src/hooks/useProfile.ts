@@ -14,6 +14,12 @@ export interface UserProfile {
   preferences: any;
   created_at: string;
   updated_at: string;
+  chat_interface_count: number;
+  has_unlimited_interfaces: boolean;
+  referral_code: string | null;
+  referred_by: string | null;
+  active_referrals_count: number;
+  referral_rewards_weeks: number;
 }
 
 export function useProfile() {

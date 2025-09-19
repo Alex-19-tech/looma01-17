@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "./ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
+import { useChatInterfaceLimit } from "@/hooks/useChatInterfaceLimit";
+import { UpgradeModal } from "./UpgradeModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,9 +41,11 @@ export function ChatSidebar({ isOpen, onClose, onUserProfileClick }: ChatSidebar
   const [isLoading, setIsLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { canCreate, count, maxCount, hasUnlimited } = useChatInterfaceLimit();
 
   useEffect(() => {
     if (isOpen) {
@@ -73,6 +77,12 @@ export function ChatSidebar({ isOpen, onClose, onUserProfileClick }: ChatSidebar
   };
 
   const handleNewAIChat = () => {
+    // Check if user can create new chat interface
+    if (!canCreate && !hasUnlimited) {
+      setUpgradeModalOpen(true);
+      return;
+    }
+
     // Reset any existing session state and navigate to a fresh chat
     navigate('/chat', { replace: true, state: { sessionId: null, initialInput: null, forceNewSession: true } });
     onClose();
@@ -289,6 +299,14 @@ export function ChatSidebar({ isOpen, onClose, onUserProfileClick }: ChatSidebar
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Upgrade Modal */}
+        <UpgradeModal 
+          isOpen={upgradeModalOpen}
+          onClose={() => setUpgradeModalOpen(false)}
+          currentCount={count}
+          maxCount={maxCount}
+        />
       </div>
     </>
   );

@@ -6,14 +6,18 @@ import { TopNavbar } from "@/components/TopNavbar";
 import { UserProfileDrawer } from "@/components/UserProfileDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useChatInterfaceLimit } from "@/hooks/useChatInterfaceLimit";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 export default function AIChat() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const [showSessions, setShowSessions] = useState(false);
   const [userProfileOpen, setUserProfileOpen] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(sessionId || null);
   const { toast } = useToast();
+  const { canCreate, count, maxCount, hasUnlimited } = useChatInterfaceLimit();
 
   useEffect(() => {
     checkAuth();
@@ -34,6 +38,12 @@ export default function AIChat() {
   };
 
   const handleCreateNew = () => {
+    // Check if user can create new chat interface
+    if (!canCreate && !hasUnlimited) {
+      setUpgradeModalOpen(true);
+      return;
+    }
+
     setCurrentSessionId(null);
     navigate('/ai-chat');
     setShowSessions(false);
@@ -70,6 +80,12 @@ export default function AIChat() {
           </div>
         </div>
         <UserProfileDrawer isOpen={userProfileOpen} onClose={() => setUserProfileOpen(false)} />
+        <UpgradeModal 
+          isOpen={upgradeModalOpen}
+          onClose={() => setUpgradeModalOpen(false)}
+          currentCount={count}
+          maxCount={maxCount}
+        />
       </div>
     );
   }

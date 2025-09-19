@@ -900,6 +900,12 @@ export function AIWorkflowChat({ initialInput, initialPromptType, sessionId }: A
   };
 
   const handleNewChat = () => {
+    // Check if user can create new chat interface
+    if (!canCreate && !hasUnlimited) {
+      setUpgradeModalOpen(true);
+      return;
+    }
+
     setMessages([]);
     setChatSessionId(null);
     setCurrentStep('input');

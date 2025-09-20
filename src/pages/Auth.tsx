@@ -76,7 +76,7 @@ export default function Auth() {
     setIsLoading(false);
   };
 
-  const handleOAuthSignIn = async (provider: 'google' | 'apple') => {
+  const handleOAuthSignIn = async (provider: 'google') => {
     setIsLoading(true);
     setError('');
 
